@@ -17,6 +17,18 @@ class Pedido(models.Model):
     Coste = models.IntegerField()
     Abono = models.IntegerField()
     Restante = models.IntegerField()
+    Cliente = models.ForeignKey(Cliente, on_delete=models.CASCADE)
     def __str__(self):
         return self.N_Orden
     
+class Marca(models.Model):
+    Marca = models.CharField(max_length=20)
+    def __str__(self):
+        return self.Marca
+    
+class Equipo(models.Model):
+    Modelo = models.CharField(max_length=50)
+    Marca = models.ForeignKey(Marca, on_delete=models.CASCADE)
+    def __str__(self):
+        return self.Modelo
+
