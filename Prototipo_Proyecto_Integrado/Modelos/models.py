@@ -6,21 +6,13 @@ class Cliente(models.Model):
     Apellido = models.CharField(max_length=20)
     Numero_telefono= models.CharField(max_length=15)
     Direccion = models.CharField(max_length=50)
-    Rut = models.IntegreField()
+    Rut = models.IntegerField()
     Activo = models.BooleanField(default=True)
     def __str__(self):
-        return self.Rut
+        return self.Nombre+" "+self.Apellido
     
-class Pedido(models.Model):
-    N_Orden = models.IntegerField()
-    Fecha = models.CharField(max_length=30)
-    Coste = models.IntegerField()
-    Abono = models.IntegerField()
-    Restante = models.IntegerField()
-    Cliente = models.ForeignKey(Cliente, on_delete=models.CASCADE)
-    Activo = models.BooleanField(default=True)
-    def __str__(self):
-        return self.N_Orden
+
+
     
 class Marca(models.Model):
     Marca = models.CharField(max_length=20)
@@ -41,3 +33,16 @@ class Dispositivo(models.Model):
     Activo = models.BooleanField(default=True)
     def __str__(self):
         return self.Nombre
+    
+class Pedido(models.Model):
+    N_Orden = models.AutoField(primary_key=True)
+    Fecha = models.CharField(max_length=30)
+    Coste = models.IntegerField()
+    Abono = models.IntegerField()
+    Restante = models.IntegerField()
+    Cliente = models.ForeignKey(Cliente, on_delete=models.CASCADE)
+    Activo = models.BooleanField(default=True)
+    Dispositivo = models.ForeignKey(Dispositivo,on_delete=models.CASCADE)
+
+    def __str__(self):
+        return str(self.N_Orden)

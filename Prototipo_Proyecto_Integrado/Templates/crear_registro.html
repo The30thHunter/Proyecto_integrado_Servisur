@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <title>{{ titulo }}</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 40px; }
+        form { max-width: 500px; margin: auto; }
+        label { display: block; margin-top: 15px; }
+        input, select, textarea { width: 100%; padding: 8px; margin-top: 5px; }
+        button { margin-top: 20px; padding: 10px 20px; background-color: #4CAF50; color: white; border: none; }
+        .botones { display: flex; justify-content: space-between; margin-top: 20px; }
+        .mensaje { text-align: center; margin-top: 50px; font-size: 1.2em; color: #2E8B57; }
+    </style>
+</head>
+<body>
+    <h2>{{ titulo }}</h2>
+
+    {% if form %}
+        <form method="post">
+            {% csrf_token %}
+            {{ form.as_p }}
+            <div class="botones">
+                <button type="submit">Guardar</button>
+
+                {% if puede_omitir %}
+                    <a href="?paso={{ siguiente_paso }}"><button type="button">Omitir</button></a>
+                {% endif %}
+            </div>
+        </form>
+    {% else %}
+        <div class="mensaje">{{ mensaje }}</div>
+    {% endif %}
+</body>
+</html>

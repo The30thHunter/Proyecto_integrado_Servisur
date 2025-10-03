@@ -1,0 +1,14 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Agregar Marca</title>
+</head>
+<body>
+    <h1>Formulario para agregar Marca</h1>
+    <form method="post">
+        {% csrf_token %} <!-- ¡MUY IMPORTANTE para la seguridad! -->
+        {{ form.as_p }} <!-- Muestra el formulario en párrafos -->
+        <button type="submit">Guardar</button>
+    </form>
+</body>
+</html>
