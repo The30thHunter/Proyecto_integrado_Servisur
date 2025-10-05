@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <title>Lista de Pedidos</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 40px; background-color: #f9f9f9; }
+        h1 { text-align: center; margin-bottom: 30px; }
+        table { width: 100%; border-collapse: collapse; background-color: white; }
+        th, td { padding: 12px; border: 1px solid #ccc; text-align: left; }
+        th { background-color: #4CAF50; color: white; }
+        tr:nth-child(even) { background-color: #f2f2f2; }
+        .acciones a {
+            margin-right: 10px;
+            padding: 6px 12px;
+            background-color: #2196F3;
+            color: white;
+            text-decoration: none;
+            border-radius: 4px;
+            font-size: 14px;
+        }
+        .acciones a.eliminar {
+            background-color: #f44336;
+        }
+        .volver { margin-top: 20px; display: block; text-align: center; }
+        .volver a { text-decoration: none; color: #4CAF50; font-weight: bold; }
+    </style>
+</head>
+<body>
+    <h1>Lista de Pedidos</h1>
+    <table>
+        <thead>
+            <tr>
+                <th>N° Orden</th>
+                <th>Fecha</th>
+                <th>Cliente</th>
+                <th>Dispositivo</th>
+                <th>Coste</th>
+                <th>Abono</th>
+                <th>Restante</th>
+                <th>Acciones</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for pedido in pedidos %}
+            <tr>
+                <td>{{ pedido.N_Orden }}</td>
+                <td>{{ pedido.Fecha }}</td>
+                <td>{{ pedido.Cliente.Nombre }} {{ pedido.Cliente.Apellido }}</td>
+                <td>{{ pedido.Dispositivo.Nombre }}</td>
+                <td>${{ pedido.Coste }}</td>
+                <td>${{ pedido.Abono }}</td>
+                <td>${{ pedido.Restante }}</td>
+                <td class="acciones">
+                    <a href="{% url 'editar_pedido' pedido.N_Orden %}">Editar</a>
+                    <a href="{% url 'eliminar_pedido' pedido.N_Orden %}" class="eliminar">Eliminar</a>
+                </td>
+            </tr>
+            {% empty %}
+            <tr>
+                <td colspan="8" style="text-align:center;">No hay pedidos registrados.</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+
+    <div class="volver">
+        <a href="{% url 'hub' %}">← Volver al panel principal</a>
+    </div>
+</body>
+</html>

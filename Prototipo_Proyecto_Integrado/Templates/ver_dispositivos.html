@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <title>dispositivos</title>
+    <style>
+        body { font-family: Arial; margin: 40px; background-color: #f9f9f9; }
+        h2 { text-align: center; margin-bottom: 30px; }
+        table { width: 100%; border-collapse: collapse; background-color: white; }
+        th, td { padding: 12px; border: 1px solid #ccc; text-align: left; }
+        th { background-color: #2196F3; color: white; }
+        tr:nth-child(even) { background-color: #f2f2f2; }
+        .acciones a {
+            margin-right: 10px;
+            padding: 6px 12px;
+            background-color: #4CAF50;
+            color: white;
+            text-decoration: none;
+            border-radius: 4px;
+            font-size: 14px;
+        }
+        .acciones a.eliminar { background-color: #f44336; }
+        .volver { margin-top: 20px; text-align: center; }
+        .volver a { text-decoration: none; color: #2196F3; font-weight: bold; }
+    </style>
+    <script>
+        function filtrarTabla() {
+            const input = document.getElementById("busqueda");
+            const filtro = input.value.toLowerCase();
+            const filas = document.querySelectorAll("#tabla-modelo tbody tr");
+
+            filas.forEach(fila => {
+                const texto = fila.textContent.toLowerCase();
+                fila.style.display = texto.includes(filtro) ? "" : "none";
+            });
+        }
+    </script>
+
+</head>
+<body>
+    <h2>Dispositivos Registrados</h2>
+
+        <div class="buscador">
+        <input type="text" id="busqueda" onkeyup="filtrarTabla()" placeholder="Buscar por Modelo, Marca">
+        </div>
+
+    <table id="tabla-Dispositivo">
+        <thead>
+            <tr>
+                <th>Nombre</th>
+                <th>Trabajo realizado</th>
+                <th>Codigo Bloqueo</th>
+                <th>Modelo</th>
+                <th>Marca</th>
+                <th>Acciones</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for Dispositivo in dispositivos %}
+            <tr>
+                <td>{{ Dispositivo.Nombre }}</td>
+                <td>{{ Dispositivo.Trabajo_realizado }}</td>
+                <td>{{ Dispositivo.Codigo_Bloqueo }}</td>
+                <td>{{ Dispositivo.modelo }}</td>
+                <td>{{ Dispositivo.modelo.Marca.Marca }}</td>
+                <td class="acciones">
+                    <a href="{% url 'editar_dispositivo' Dispositivo.pk %}">Editar</a>
+                    <a href="{% url 'eliminar_dispositivo' Dispositivo.pk %}" class="eliminar">Eliminar</a>
+                </td>
+            </tr>
+            {% empty %}
+            <tr><td colspan="6" style="text-align:center;">No hay Dispositivos registrados.</td></tr>
+            {% endfor %}
+        </tbody>
+    </table>
+    <div class="volver">
+        <a href="{% url 'ver_otros' %}">← Volver a Ver Otros</a>
+    </div>
+</body>
+</html>

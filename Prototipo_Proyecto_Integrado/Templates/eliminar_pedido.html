@@ -1,0 +1,24 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <title>Eliminar Pedido</title>
+    <style>
+        body { font-family: Arial; margin: 40px; text-align: center; }
+        .confirmacion { margin-top: 50px; }
+        button { padding: 10px 20px; margin: 10px; border: none; font-size: 16px; }
+        .eliminar { background-color: #f44336; color: white; }
+        .cancelar { background-color: #ccc; color: black; }
+    </style>
+</head>
+<body>
+    <h2>¿Eliminar Pedido #{{ pedido.N_Orden }}?</h2>
+    <div class="confirmacion">
+        <form method="post">
+            {% csrf_token %}
+            <button type="submit" class="eliminar">Sí, eliminar</button>
+            <a href="{% url 'ver_pedidos' %}"><button type="button" class="cancelar">Cancelar</button></a>
+        </form>
+    </div>
+</body>
+</html>

@@ -6,6 +6,13 @@ class ClienteForm(forms.ModelForm):
         model = Cliente
         fields = ['Nombre', 'Apellido', 'Numero_telefono', 'Direccion', 'Rut']
 
+    def clean_Rut(self):
+        rut = self.cleaned_data['Rut']
+        if Cliente.objects.filter(Rut=rut).exists():
+            raise forms.ValidationError("Ya existe un cliente con este RUT.")
+        return rut
+
+
 class PedidoForm(forms.ModelForm):
     Cliente = forms.ModelChoiceField(
         queryset=Cliente.objects.filter(Activo=True),
@@ -27,7 +34,14 @@ class PedidoForm(forms.ModelForm):
 class MarcaForm(forms.ModelForm):
     class Meta:
         model = Marca
-        fields = ['Marca']
+        fields = '__all__'
+
+    def clean_Marca(self):
+        nombre = self.cleaned_data['Marca'].strip().lower()
+        if Marca.objects.filter(Marca__iexact=nombre).exists():
+            raise forms.ValidationError("Ya existe una marca con ese nombre.")
+        return self.cleaned_data['Marca']
+
 
 class ModeloForm(forms.ModelForm):
     Marca = forms.ModelChoiceField(
@@ -39,6 +53,13 @@ class ModeloForm(forms.ModelForm):
     class Meta:
         model = Modelo
         fields = ['Modelo', 'Marca']
+    
+    def clean_Modelo(self):
+        nombre = self.cleaned_data['Modelo'].strip().lower()
+        if Modelo.objects.filter(Modelo__iexact=nombre).exists():
+            raise forms.ValidationError("Ya existe un modelo con ese nombre.")
+        return self.cleaned_data['Modelo']
+
 
 
 class DispositivoForm(forms.ModelForm):

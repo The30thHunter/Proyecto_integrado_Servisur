@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <title>Modelos</title>
+    <style>
+        body { font-family: Arial; margin: 40px; background-color: #f9f9f9; }
+        h2 { text-align: center; margin-bottom: 30px; }
+        table { width: 100%; border-collapse: collapse; background-color: white; }
+        th, td { padding: 12px; border: 1px solid #ccc; text-align: left; }
+        th { background-color: #2196F3; color: white; }
+        tr:nth-child(even) { background-color: #f2f2f2; }
+        .acciones a {
+            margin-right: 10px;
+            padding: 6px 12px;
+            background-color: #4CAF50;
+            color: white;
+            text-decoration: none;
+            border-radius: 4px;
+            font-size: 14px;
+        }
+        .acciones a.eliminar { background-color: #f44336; }
+        .volver { margin-top: 20px; text-align: center; }
+        .volver a { text-decoration: none; color: #2196F3; font-weight: bold; }
+    </style>
+    <script>
+        function filtrarTabla() {
+            const input = document.getElementById("busqueda");
+            const filtro = input.value.toLowerCase();
+            const filas = document.querySelectorAll("#tabla-modelo tbody tr");
+
+            filas.forEach(fila => {
+                const texto = fila.textContent.toLowerCase();
+                fila.style.display = texto.includes(filtro) ? "" : "none";
+            });
+        }
+    </script>
+
+</head>
+<body>
+    <h2>Modelos Registrados</h2>
+
+        <div class="buscador">
+        <input type="text" id="busqueda" onkeyup="filtrarTabla()" placeholder="Buscar por Modelo, Marca">
+        </div>
+
+    <table id="tabla-modelo">
+        <thead>
+            <tr>
+                <th>Modelo</th>
+                <th>Marca</th>
+                <th>Acciones</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for cliente in modelos %}
+            <tr>
+                <td>{{ cliente.Modelo }}</td>
+                <td>{{ cliente.Marca }}</td>
+                <td class="acciones">
+                    <a href="{% url 'editar_modelo' cliente.pk %}">Editar</a>
+                    <a href="{% url 'eliminar_modelo' cliente.pk %}" class="eliminar">Eliminar</a>
+                </td>
+            </tr>
+            {% empty %}
+            <tr><td colspan="6" style="text-align:center;">No hay Modelos registrados.</td></tr>
+            {% endfor %}
+        </tbody>
+    </table>
+    <div class="volver">
+        <a href="{% url 'ver_otros' %}">← Volver a Ver Otros</a>
+    </div>
+</body>
+</html>

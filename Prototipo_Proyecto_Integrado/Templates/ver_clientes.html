@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <title>Clientes</title>
+    <style>
+        body { font-family: Arial; margin: 40px; background-color: #f9f9f9; }
+        h2 { text-align: center; margin-bottom: 20px; }
+        .buscador {
+            text-align: center;
+            margin-bottom: 20px;
+        }
+        input[type="text"] {
+            padding: 8px;
+            width: 300px;
+            font-size: 16px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+        }
+        table { width: 100%; border-collapse: collapse; background-color: white; }
+        th, td { padding: 12px; border: 1px solid #ccc; text-align: left; }
+        th { background-color: #2196F3; color: white; }
+        tr:nth-child(even) { background-color: #f2f2f2; }
+        .acciones a {
+            margin-right: 10px;
+            padding: 6px 12px;
+            background-color: #4CAF50;
+            color: white;
+            text-decoration: none;
+            border-radius: 4px;
+            font-size: 14px;
+        }
+        .acciones a.eliminar { background-color: #f44336; }
+        .volver { margin-top: 20px; text-align: center; }
+        .volver a { text-decoration: none; color: #2196F3; font-weight: bold; }
+    </style>
+    <script>
+        function filtrarTabla() {
+            const input = document.getElementById("busqueda");
+            const filtro = input.value.toLowerCase();
+            const filas = document.querySelectorAll("#tabla-clientes tbody tr");
+
+            filas.forEach(fila => {
+                const texto = fila.textContent.toLowerCase();
+                fila.style.display = texto.includes(filtro) ? "" : "none";
+            });
+        }
+    </script>
+</head>
+<body>
+    <h2>Clientes Registrados</h2>
+
+    <div class="buscador">
+        <input type="text" id="busqueda" onkeyup="filtrarTabla()" placeholder="Buscar por nombre, apellido o RUT...">
+    </div>
+
+    <table id="tabla-clientes">
+        <thead>
+            <tr>
+                <th>Nombre</th>
+                <th>Apellido</th>
+                <th>RUT</th>
+                <th>Teléfono</th>
+                <th>Dirección</th>
+                <th>Acciones</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for cliente in clientes %}
+            <tr>
+                <td>{{ cliente.Nombre }}</td>
+                <td>{{ cliente.Apellido }}</td>
+                <td>{{ cliente.Rut }}</td>
+                <td>{{ cliente.Numero_telefono }}</td>
+                <td>{{ cliente.Direccion }}</td>
+                <td class="acciones">
+                    <a href="{% url 'editar_cliente' cliente.pk %}">Editar</a>
+                    <a href="{% url 'eliminar_cliente' cliente.pk %}" class="eliminar">Eliminar</a>
+                </td>
+            </tr>
+            {% empty %}
+            <tr><td colspan="6" style="text-align:center;">No hay clientes registrados.</td></tr>
+            {% endfor %}
+        </tbody>
+    </table>
+
+    <div class="volver">
+        <a href="{% url 'ver_otros' %}">← Volver a Ver Otros</a>
+    </div>
+</body>
+</html>

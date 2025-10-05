@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <title>Ver Otros</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f4f4f4;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100vh;
+            margin: 0;
+        }
+
+        h1 {
+            margin-bottom: 40px;
+            color: #333;
+        }
+
+        .botonera {
+            display: grid;
+            grid-template-columns: repeat(2, 220px);
+            gap: 30px;
+        }
+
+        .boton {
+            padding: 20px;
+            background-color: #2196F3;
+            color: white;
+            text-align: center;
+            text-decoration: none;
+            font-size: 16px;
+            border-radius: 8px;
+            transition: background-color 0.3s ease;
+        }
+
+        .boton:hover {
+            background-color: #1976D2;
+        }
+
+        .volver {
+            margin-top: 40px;
+        }
+
+        .volver a {
+            text-decoration: none;
+            color: #4CAF50;
+            font-weight: bold;
+        }
+    </style>
+</head>
+<body>
+    <h1>Ver Otros</h1>
+    <div class="botonera">
+        <a href="{% url 'ver_clientes' %}" class="boton">Ver Clientes</a>
+        <a href="{% url 'ver_dispositivos' %}" class="boton">Ver Dispositivos</a>
+        <a href="{% url 'ver_modelos' %}" class="boton">Ver Modelos</a>
+        <a href="{% url 'ver_marcas' %}" class="boton">Ver Marcas</a>
+    </div>
+
+    <div class="volver">
+        <a href="{% url 'hub' %}">← Volver al panel principal</a>
+    </div>
+</body>
+</html>
