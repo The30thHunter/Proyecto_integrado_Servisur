@@ -63,6 +63,7 @@ def crear_registro(request):
         }
 
     elif paso == 'finalizado':
+        
         return render(request, 'hub')
 
     return render(request, 'crear_registro.html', contexto)
