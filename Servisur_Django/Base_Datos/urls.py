@@ -1,11 +1,11 @@
 from django.urls import path
 from .views import main_view
 from django.urls import path
-from .views import main_view, logout_view  # ← aquí debe estar logout_view
+from .views import main_view, logout_view 
+from . import views 
 
 urlpatterns = [
     path('', main_view, name='main'),
-    #path('logout/', logout_view, name='logout'),
     path('logout/', logout_view, name='logout'),
-
+    path('accounts/login/', views.login_view, name='login'),
 ]
