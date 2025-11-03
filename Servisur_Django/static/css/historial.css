@@ -1,0 +1,102 @@
+body {
+  margin: 0;
+  padding: 0;
+  font-family: "Segoe UI", sans-serif;
+  background: linear-gradient(
+    to right,
+    rgba(66, 168, 161, 0.2),
+    rgba(35, 144, 137, 0.2)
+  );
+}
+
+.container {
+  max-width: 1000px;
+  margin: 40px auto;
+  background-color: white;
+  padding: 30px;
+  border-radius: 12px;
+  box-shadow: 0 0 15px rgba(0, 0, 0, 0.1);
+}
+
+h2 {
+  text-align: center;
+  margin-bottom: 30px;
+  color: #239089;
+}
+
+.busqueda-especifica,
+.busqueda-fecha {
+  margin-bottom: 30px;
+}
+
+.busqueda-especifica h3,
+.busqueda-fecha h3 {
+  margin-bottom: 10px;
+  color: #333;
+}
+
+form {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+form input,
+form button {
+  padding: 8px;
+  border: 1px solid #ccc;
+  border-radius: 6px;
+  font-size: 14px;
+  flex: 1 1 200px;
+}
+
+form button {
+  background-color: #42a8a1;
+  color: white;
+  border: none;
+  cursor: pointer;
+}
+
+.table-container {
+  overflow-x: auto;
+}
+
+.historial-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.historial-table th,
+.historial-table td {
+  padding: 12px;
+  border-bottom: 1px solid #ddd;
+  text-align: left;
+}
+
+.historial-table th {
+  background-color: #f0f0f0;
+  color: #333;
+}
+
+.historial-table tr:hover {
+  background-color: #f9f9f9;
+}
+
+.no-data {
+  text-align: center;
+  padding: 20px;
+  color: #999;
+}
+
+@media (max-width: 600px) {
+  form input,
+  form button {
+    flex: 1 1 100%;
+  }
+
+  .historial-table th,
+  .historial-table td {
+    font-size: 13px;
+    padding: 8px;
+  }
+}

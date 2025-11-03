@@ -38,5 +38,20 @@ def login_view(request):
 
 # Historial de reparaciones
 def consultar_historial(request):
-    reparaciones = Reparacion.objects.all().order_by('-fecha_ingreso')
+    rut = request.GET.get('rut')
+    orden = request.GET.get('orden')
+    fecha = request.GET.get('fecha')
+
+    if rut or orden:
+        reparaciones = Reparacion.objects.all()
+        if rut:
+            reparaciones = reparaciones.filter(rut__icontains=rut)
+        if orden:
+            reparaciones = reparaciones.filter(numero_orden__icontains=orden)
+    elif fecha:
+        reparaciones = Reparacion.objects.filter(fecha_ingreso=fecha)
+    else:
+        reparaciones = Reparacion.objects.all().order_by('-fecha_ingreso')
+
     return render(request, 'base_datos/Consultar_historial.html', {'reparaciones': reparaciones})
+
