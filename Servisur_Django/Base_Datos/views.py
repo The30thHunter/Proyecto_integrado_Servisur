@@ -2,6 +2,7 @@ from django.shortcuts import render
 from django.contrib.auth.decorators import login_required, user_passes_test
 from .formulario import LoginForm
 from django.contrib.auth import authenticate, login
+from .models import Reparacion
 
 
 # Create your views here.
@@ -34,3 +35,11 @@ def login_view(request):
                 mensaje = 'Usuario o contraseña incorrectos'
 
     return render(request, 'login.html', {'form': form, 'mensaje': mensaje})
+
+
+
+
+def consultar_historial(request):
+    reparaciones = Reparacion.objects.all().order_by('-fecha_ingreso')
+    return render(request, 'base_datos/Consultar_historial.html', {'reparaciones': reparaciones})
+

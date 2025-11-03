@@ -1,4 +1,5 @@
 from django.db import models
+from django.contrib.auth.models import User
 
 # Create your models here.
 class Cliente(models.Model):
@@ -10,7 +11,6 @@ class Cliente(models.Model):
     Activo = models.BooleanField(default=True)
     def __str__(self):
         return self.Nombre+" "+self.Apellido
-    
 
 
     
@@ -46,3 +46,24 @@ class Pedido(models.Model):
 
     def __str__(self):
         return str(self.N_Orden)
+    
+
+
+
+class Reparacion(models.Model):
+    nombre = models.CharField(max_length=100)
+    apellido = models.CharField(max_length=100)
+    numero_orden = models.CharField(max_length=20)
+    fecha_ingreso = models.DateField()
+    rut = models.CharField(max_length=12)
+    marca = models.CharField(max_length=50)
+    equipo = models.CharField(max_length=100)
+    estado = models.CharField(max_length=50, choices=[
+        ('activo', 'Activo'),
+        ('inactivo', 'Inactivo'),
+        ('pendiente', 'Pendiente'),
+        ('entregado', 'Entregado'),
+    ])
+
+    def __str__(self):
+        return f"{self.nombre} {self.apellido} - {self.numero_orden}"
