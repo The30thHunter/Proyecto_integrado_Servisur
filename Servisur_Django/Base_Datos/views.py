@@ -1,47 +1,42 @@
-from django.shortcuts import render
-from django.contrib.auth.decorators import login_required, user_passes_test
+from django.shortcuts import render, redirect
+from django.contrib.auth.decorators import login_required
+from django.contrib.auth import authenticate, login, logout
+from django.contrib.auth.models import User
 from .formulario import LoginForm
-from django.contrib.auth import authenticate, login
 from .models import Reparacion
-
-
-# Create your views here.
 
 @login_required
 def main_view(request):
     return render(request, 'base_datos/main.html')
 
-from django.contrib.auth import logout
-from django.shortcuts import redirect
-
+# Cerrar sesión
 def logout_view(request):
     logout(request)
-    return redirect('main') 
+    return redirect('main')
 
-
+# Login con mensajes personalizados
 def login_view(request):
     form = LoginForm(request.POST or None)
-    mensaje = ''
+    error_message = ''
 
     if request.method == 'POST':
         if form.is_valid():
             usuario = form.cleaned_data['username']
             clave = form.cleaned_data['password']
             user = authenticate(request, username=usuario, password=clave)
+
             if user is not None:
                 login(request, user)
                 return redirect('main')
             else:
-                mensaje = 'Usuario o contraseña incorrectos'
+                if not User.objects.filter(username=usuario).exists():
+                    error_message = 'El usuario no existe.'
+                else:
+                    error_message = 'Contraseña incorrecta.'
 
-    return render(request, 'login.html', {'form': form, 'mensaje': mensaje})
+    return render(request, 'login.html', {'form': form, 'error_message': error_message})
 
-
-
-# Solo falta conectar los filtros con la base de datos si se quiere hacer búsqueda por nombre, orden, etc.
-# El modelo Reparacion ya está creado y migrado. Se usa Reparacion.objects.all() por ahora.
-
+# Historial de reparaciones
 def consultar_historial(request):
     reparaciones = Reparacion.objects.all().order_by('-fecha_ingreso')
     return render(request, 'base_datos/Consultar_historial.html', {'reparaciones': reparaciones})
-

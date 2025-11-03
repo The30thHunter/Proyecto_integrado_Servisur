@@ -17,7 +17,9 @@
         />
         <h2>Bienvenido de nuevo</h2>
         <p>Ingresa tus credenciales para acceder a tu cuenta.</p>
-
+        {% if error_message %}
+        <div class="error-box" id="errorBox">{{ error_message }}</div>
+        {% endif %}
         <form method="post">
           {% csrf_token %}
 

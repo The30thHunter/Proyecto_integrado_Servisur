@@ -134,3 +134,14 @@ p {
     font-size: 14px;
   }
 }
+
+.error-box {
+  background-color: #ffe0e0;
+  color: #b30000;
+  padding: 10px;
+  border-radius: 6px;
+  margin-bottom: 15px;
+  font-size: 14px;
+  text-align: center;
+  box-shadow: 0 0 10px rgba(255, 0, 0, 0.1);
+}

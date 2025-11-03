@@ -22,3 +22,11 @@ password.addEventListener("input", function () {
 window.onload = function () {
   username.focus();
 };
+
+// Ocultar el mensaje de error después de 4 segundos
+setTimeout(function () {
+  const errorBox = document.getElementById("errorBox");
+  if (errorBox) {
+    errorBox.style.display = "none";
+  }
+}, 4000);
