@@ -1,0 +1,136 @@
+/*Aqui cambiar el background de fondo */
+body {
+  margin: 0;
+  padding: 0;
+  background: url("../img/background.jpg") no-repeat center center fixed;
+  background-size: cover;
+  font-family: "Segoe UI", sans-serif;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  height: 100vh;
+}
+
+/* Contenedor principal */
+.login-wrapper {
+  width: 100%;
+  max-width: 400px;
+  padding: 20px;
+}
+
+/* Caja del formulario */
+.login-box {
+  background-color: white;
+  padding: 30px;
+  border-radius: 12px;
+  box-shadow: 0 0 20px rgba(0, 0, 0, 0.1);
+  text-align: center;
+  animation: fadeIn 0.8s ease-in;
+}
+
+/* Animación de entrada */
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Logo */
+.logo {
+  width: 130px;
+  height: auto;
+  margin-bottom: 15px;
+  display: block;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+/* Títulos */
+h2 {
+  margin-bottom: 10px;
+  color: #333;
+}
+
+p {
+  margin-bottom: 20px;
+  color: #666;
+}
+
+/* Grupo de inputs */
+.input-group {
+  display: flex;
+  align-items: center;
+  margin: 15px 0;
+  border: 1px solid #ccc;
+  border-radius: 6px;
+  padding: 8px;
+  background-color: #f9f9f9;
+}
+
+/* Campo de texto */
+.input-group input {
+  flex: 1;
+  border: none;
+  background: none;
+  padding: 8px;
+  outline: none;
+  font-size: 14px;
+}
+
+/* Íconos PNG */
+.icon-img {
+  width: 20px;
+  height: 20px;
+  margin-right: 8px;
+}
+
+.toggle-icon {
+  width: 20px;
+  height: 20px;
+  margin-left: 8px;
+  cursor: pointer;
+}
+
+/* Botón de login */
+.login-btn {
+  width: 100%;
+  padding: 10px;
+  background-color: #42a8a1;
+  color: white;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  margin-top: 20px;
+  font-size: 16px;
+}
+
+/* Enlace de recuperación */
+.forgot-link {
+  display: block;
+  margin-top: 15px;
+  color: #239089;
+  text-decoration: none;
+  font-size: 14px;
+}
+
+/* Diseño responsivo */
+@media (max-width: 600px) {
+  .login-box {
+    padding: 20px;
+  }
+
+  .icon-img,
+  .toggle-icon {
+    width: 16px;
+    height: 16px;
+  }
+
+  .login-btn {
+    font-size: 14px;
+  }
+}

@@ -38,6 +38,8 @@ def login_view(request):
 
 
 
+# Solo falta conectar los filtros con la base de datos si se quiere hacer búsqueda por nombre, orden, etc.
+# El modelo Reparacion ya está creado y migrado. Se usa Reparacion.objects.all() por ahora.
 
 def consultar_historial(request):
     reparaciones = Reparacion.objects.all().order_by('-fecha_ingreso')
