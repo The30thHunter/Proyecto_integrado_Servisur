@@ -13,8 +13,6 @@ def main_view(request):
 def registrar_reparacion_view(request):
     return render(request, 'base_datos/Registrar_reparacion.html')
 
-def consultar_historial_view(request):
-    return render(request, 'base_datos/Consultar_historial.html')
 
 def estado_reparacion_view(request):
     return render(request, 'base_datos/Estado_reparacion.html')
