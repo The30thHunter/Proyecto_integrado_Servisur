@@ -4,10 +4,31 @@ from django.contrib.auth import authenticate, login, logout
 from django.contrib.auth.models import User
 from .formulario import LoginForm
 from .models import Reparacion
+from django.utils import timezone
 
 @login_required
 def main_view(request):
-    return render(request, 'base_datos/main.html')
+    # Horario configurable: cámbialo aquí si quieres
+    opening_hour = "09:00"
+    closing_hour = "19:30"
+
+    # Fecha local (formato legible)
+    hoy = timezone.localtime(timezone.now()).date()
+    fecha_formateada = hoy.strftime("%d/%m/%Y")  # ejemplo: 04/11/2025
+
+    # Nombre de usuario (si no autenticado mostramos 'Invitado')
+    if request.user.is_authenticated:
+        nombre_usuario = request.user.get_full_name() or request.user.username
+    else:
+        nombre_usuario = "Invitado"
+
+    context = {
+        "fecha_hoy": fecha_formateada,
+        "horario_apertura": opening_hour,
+        "horario_cierre": closing_hour,
+        "usuario_activo": nombre_usuario,
+    }
+    return render(request, "base_datos/main.html", context)
 
 
 def registrar_reparacion_view(request):

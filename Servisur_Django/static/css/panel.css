@@ -1,0 +1,258 @@
+/* ==========================
+   Palette and base layout
+   ========================== */
+:root{
+  --bg-1: #f6f9fc;
+  --bg-2: #eef4fb;
+  --card-bg-start: #ffffff;
+  --card-bg-end: #fbfdff;
+  --primary: #0b5ed7;
+  --muted: #6c757d;
+  --shadow-1: rgba(11,28,70,0.04);
+  --shadow-2: rgba(11,28,70,0.08);
+}
+
+body {
+  background: linear-gradient(180deg, var(--bg-1), var(--bg-2));
+  color: #0f1724;
+  -webkit-font-smoothing:antialiased;
+  -moz-osx-font-smoothing:grayscale;
+  margin: 0;
+  padding: 0;
+}
+
+/* ==========================
+   Animations
+   ========================== */
+.animate-fade-in {
+  animation: fadeIn .8s ease both;
+}
+
+.animate-slide-up {
+  animation: slideUp .7s ease both;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+
+@keyframes slideUp {
+  from { transform: translateY(12px); opacity: 0; }
+  to   { transform: translateY(0); opacity: 1; }
+}
+
+/* ==========================
+   Hero
+   ========================== */
+.hero {
+  border-radius: 10px;
+  padding: 1rem;
+  display: flex;
+  align-items: center;
+}
+
+/* Dark variant for hero */
+.hero-dark {
+  background: linear-gradient(90deg, #0b2540 0%, #052235 100%);
+  color: #ffffff;
+  border: 1px solid rgba(255,255,255,0.04);
+  box-shadow: 0 8px 30px rgba(2,12,27,0.18);
+}
+.hero img {
+  max-height: 84px;
+  object-fit: contain;
+  display: block;
+}
+
+/* ==========================
+   Ticker / Marquee
+   ========================== */
+.ticker-wrap { overflow: hidden; position: relative; }
+.ticker {
+  display: flex;
+  gap: 2rem;
+  white-space: nowrap;
+  animation: tickerAnim 16s linear infinite;
+  align-items: center;
+}
+.ticker span {
+  display: inline-block;
+  color: var(--primary);
+  font-weight: 500;
+}
+@keyframes tickerAnim {
+  0%   { transform: translateX(0); }
+  100% { transform: translateX(-50%); }
+}
+.ticker:hover { animation-play-state: paused; }
+
+/* ==========================
+   Cards common utilities
+   ========================== */
+.card, .info-card, .action-card, .hover-card, .ticket-info {
+  border-radius: 10px;
+  background: linear-gradient(180deg, var(--card-bg-start), var(--card-bg-end));
+  transition: transform .25s ease, box-shadow .25s ease, background-color .25s ease;
+  -webkit-backface-visibility: hidden;
+  backface-visibility: hidden;
+}
+
+/* Info cards (static, subtle) */
+.info-card {
+  background: linear-gradient(180deg, #fff, #fbfbfd);
+  transition: box-shadow .18s ease, transform .18s ease;
+}
+.info-card:hover {
+  transform: translateY(-6px);
+  box-shadow: 0 10px 30px rgba(15,15,30,0.06);
+}
+.info-img {
+  width: 96px;
+  height: 72px;
+  object-fit: cover;
+  display: block;
+}
+
+/* Ticket card (info at right of ISO) */
+.ticket-info {
+  border: 1px solid rgba(11,37,88,0.04);
+  box-shadow: 0 8px 20px var(--shadow-1);
+}
+.ticket-info:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 18px 40px var(--shadow-2);
+}
+.ticket-info small.text-muted { color: var(--muted); }
+.ticket-info strong { color: var(--primary); }
+
+/* ==========================
+   Action / interactive cards
+   ========================== */
+.action-card {
+  cursor: pointer;
+  transition: transform .28s cubic-bezier(.22,.9,.32,1), box-shadow .28s ease, background-color .28s;
+}
+.action-card:hover {
+  transform: translateY(-8px) scale(1.01);
+  box-shadow: 0 18px 40px var(--shadow-2);
+  background: linear-gradient(180deg, #ffffff, #fbfdff);
+}
+
+/* legacy hover-card and hover-icon kept for compatibility */
+.hover-card {
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+.hover-card:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 8px 20px rgba(0,0,0,0.12);
+  background-color: #f8f9fa;
+}
+.hover-icon {
+  transition: transform 0.3s ease;
+}
+.hover-icon:hover { transform: scale(1.12); }
+
+/* ==========================
+   Visual helpers
+   ========================== */
+.text-muted { color: var(--muted) !important; }
+.small { font-size: .85rem; }
+
+/* ==========================
+   Layout tweaks
+   ========================== */
+.container { max-width: 1100px; }
+
+/* ==========================
+   Accessibility / responsive tweaks
+   ========================== */
+@media (max-width: 767px) {
+  .info-img { width:72px; height:56px; }
+  .hero img { max-height:64px; }
+  .container { padding-left: .75rem; padding-right: .75rem; }
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+/* Header personalizado coherente con el background del panel */
+.header-custom {
+  background: linear-gradient(180deg, rgba(255,255,255,0.03), rgba(255,255,255,0.00));
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
+  border-bottom: 1px solid rgba(11,28,70,0.06);
+  padding-top: 0.5rem;
+  padding-bottom: 0.5rem;
+  align-items: center;
+}
+
+/* Si prefieres un header más oscuro (usa .header-dark en lugar de .header-custom)
+.header-dark {
+  background: linear-gradient(180deg, rgba(6,30,50,0.95), rgba(4,18,30,0.92));
+  color: #fff;
+  border-bottom: 1px solid rgba(255,255,255,0.04);
+}
+*/
+
+/* Logo dentro del header */
+.header-logo {
+  max-height: 64px;
+  object-fit: contain;
+  display: block;
+}
+
+/* Link styling inside header */
+.header-custom .nav-link {
+  color: rgba(15,23,36,0.65);
+  padding: 0.25rem 0.5rem;
+}
+.header-custom .nav-link:hover {
+  color: var(--primary);
+  text-decoration: none;
+}
+
+/* Logout button spacing and hover */
+.btn-logout img {
+  transition: transform .18s ease, filter .18s ease;
+  filter: drop-shadow(0 2px 6px rgba(2,12,27,0.08));
+  border-radius: 6px;
+}
+.btn-logout img:hover {
+  transform: translateY(-3px);
+  filter: drop-shadow(0 8px 20px rgba(2,12,27,0.12));
+}
+
+/* Make header blend when hero-dark is used */
+.hero-dark + .header-custom,
+.header-custom.hero-dark {
+  background: linear-gradient(90deg, #052235, #0b2540);
+  color: #fff;
+  border-bottom: 1px solid rgba(255,255,255,0.04);
+}
+
+/* Responsive tweaks */
+@media (max-width: 575px) {
+  .header-custom .navbar-brand div { display: none; }
+  .header-logo { max-height: 54px; }
+  .header-custom { padding-left: .75rem; padding-right: .75rem; }
+}
