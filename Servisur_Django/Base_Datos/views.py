@@ -9,6 +9,23 @@ from .models import Reparacion
 def main_view(request):
     return render(request, 'base_datos/main.html')
 
+
+def registrar_reparacion_view(request):
+    return render(request, 'base_datos/Registrar_reparacion.html')
+
+def consultar_historial_view(request):
+    return render(request, 'base_datos/Consultar_historial.html')
+
+def estado_reparacion_view(request):
+    return render(request, 'base_datos/Estado_reparacion.html')
+
+def generar_documento_view(request):
+    return render(request, 'base_datos/Generar_documento.html')
+
+def generar_excel_view(request):
+    return render(request, 'base_datos/Generar_Excel.html')
+
+
 # Cerrar sesión
 def logout_view(request):
     logout(request)
@@ -54,4 +71,3 @@ def consultar_historial(request):
         reparaciones = Reparacion.objects.all().order_by('-fecha_ingreso')
 
     return render(request, 'base_datos/Consultar_historial.html', {'reparaciones': reparaciones})
-
