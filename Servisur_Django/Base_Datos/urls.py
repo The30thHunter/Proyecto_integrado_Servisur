@@ -1,6 +1,6 @@
 from django.urls import path
 from .views import main_view
-from django.urls import path
+
 from .views import main_view, logout_view 
 from . import views 
 from .views import registrar_reparacion_view, estado_reparacion_view, generar_documento_view, generar_excel_view

@@ -5,6 +5,12 @@ from django.contrib.auth.models import User
 from .formulario import LoginForm
 from .models import Reparacion
 from django.utils import timezone
+from django.shortcuts import render, redirect
+from django.db import transaction
+from django.contrib import messages
+
+# importa tus formularios
+from .formulario import ClienteForm, DispositivoForm, PedidoForm
 
 @login_required
 def main_view(request):
@@ -32,7 +38,56 @@ def main_view(request):
 
 
 def registrar_reparacion_view(request):
-    return render(request, 'base_datos/Registrar_reparacion.html')
+    """
+    Vista única que muestra los formularios de Cliente, Dispositivo y Pedido
+    y guarda los 3 registros en una transacción al enviar.
+    """
+    if request.method == "POST":
+        cliente_form = ClienteForm(request.POST, prefix="cliente")
+        dispositivo_form = DispositivoForm(request.POST, prefix="dispositivo")
+        pedido_form = PedidoForm(request.POST, prefix="pedido")
+
+        # validación conjunta
+        if cliente_form.is_valid() and dispositivo_form.is_valid() and pedido_form.is_valid():
+            try:
+                with transaction.atomic():
+                    # Guardar cliente
+                    cliente = cliente_form.save()
+
+                    # Guardar dispositivo (setea Activo=True por defecto)
+                    dispositivo = dispositivo_form.save(commit=False)
+                    dispositivo.Activo = True
+                    dispositivo.save()
+
+                    # Guardar pedido vinculando cliente y dispositivo
+                    pedido = pedido_form.save(commit=False)
+                    pedido.Cliente = cliente
+                    pedido.Dispositivo = dispositivo
+
+                    # si no enviaste Fecha en el formulario, puedes asignar hoy como fallback
+                    if not pedido.Fecha:
+                        from django.utils import timezone
+                        pedido.Fecha = timezone.localtime(timezone.now()).strftime("%d/%m/%Y")
+                    pedido.save()
+
+                messages.success(request, "Reparación registrada correctamente (Orden: {})".format(pedido.N_Orden))
+                return redirect('registrar_reparacion')
+            except Exception as e:
+                messages.error(request, "Ocurrió un error al guardar: {}".format(str(e)))
+        else:
+            # si no son válidos, se muestran errores en la plantilla
+            messages.error(request, "Corrige los errores del formulario.")
+    else:
+        cliente_form = ClienteForm(prefix="cliente")
+        dispositivo_form = DispositivoForm(prefix="dispositivo")
+        pedido_form = PedidoForm(prefix="pedido")
+
+    context = {
+        "cliente_form": cliente_form,
+        "dispositivo_form": dispositivo_form,
+        "pedido_form": pedido_form,
+    }
+    return render(request, "base_datos/Registrar_reparacion.html", context)
 
 
 def estado_reparacion_view(request):

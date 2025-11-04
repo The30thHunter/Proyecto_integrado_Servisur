@@ -1,0 +1,126 @@
+{% extends "base_datos/base.html" %}
+{% load static form_tags %}
+{% block title %}Registrar Reparación - Servisur{% endblock %}
+
+{% block content %}
+<link rel="stylesheet" href="{% static 'css/panel.css' %}">
+
+<div class="container py-4">
+  <h3 class="mb-3 text-secondary">Registrar Reparación</h3>
+
+  {% if messages %}
+  <div class="mb-3">
+    {% for message in messages %}
+      <div class="alert {% if message.tags %}alert-{{ message.tags }}{% else %}alert-info{% endif %}">{{ message }}</div>
+    {% endfor %}
+  </div>
+  {% endif %}
+
+  <form method="post" novalidate>
+    {% csrf_token %}
+
+    <div class="row gx-3">
+      <!-- Datos del cliente -->
+      <div class="col-lg-6">
+        <div class="card mb-3 p-3">
+          <h6 class="mb-3">Datos del cliente</h6>
+
+          <div class="mb-2">
+            {{ cliente_form.Nombre.label_tag }}
+            {{ cliente_form.Nombre|add_class:"form-control" }}
+            {{ cliente_form.Nombre.errors }}
+          </div>
+
+          <div class="mb-2">
+            {{ cliente_form.Apellido.label_tag }}
+            {{ cliente_form.Apellido|add_class:"form-control" }}
+            {{ cliente_form.Apellido.errors }}
+          </div>
+
+          <div class="mb-2">
+            {{ cliente_form.Rut.label_tag }}
+            {{ cliente_form.Rut|add_class:"form-control" }}
+            {{ cliente_form.Rut.errors }}
+          </div>
+
+          <div class="mb-2">
+            {{ cliente_form.Numero_telefono.label_tag }}
+            {{ cliente_form.Numero_telefono|add_class:"form-control" }}
+            {{ cliente_form.Numero_telefono.errors }}
+          </div>
+
+          <div class="mb-2">
+            {{ cliente_form.Direccion.label_tag }}
+            {{ cliente_form.Direccion|add_class:"form-control" }}
+            {{ cliente_form.Direccion.errors }}
+          </div>
+        </div>
+      </div>
+
+      <!-- Datos del equipo + Pedido (lado derecho) -->
+      <div class="col-lg-6">
+        <div class="card mb-3 p-3">
+          <h6 class="mb-3">Datos del equipo</h6>
+
+          <div class="mb-2">
+            {{ dispositivo_form.Nombre.label_tag }}
+            {{ dispositivo_form.Nombre|add_class:"form-control" }}
+            {{ dispositivo_form.Nombre.errors }}
+          </div>
+
+          <div class="mb-2">
+            {{ dispositivo_form.modelo.label_tag }}
+            {{ dispositivo_form.modelo|add_class:"form-select" }}
+            {{ dispositivo_form.modelo.errors }}
+          </div>
+
+          <div class="mb-2">
+            {{ dispositivo_form.Trabajo_realizado.label_tag }}
+            {{ dispositivo_form.Trabajo_realizado|add_class:"form-control" }}
+            {{ dispositivo_form.Trabajo_realizado.errors }}
+          </div>
+
+          <div class="mb-2">
+            {{ dispositivo_form.Codigo_Bloqueo.label_tag }}
+            {{ dispositivo_form.Codigo_Bloqueo|add_class:"form-control" }}
+            {{ dispositivo_form.Codigo_Bloqueo.errors }}
+          </div>
+        </div>
+
+        <div class="card mb-3 p-3">
+          <h6 class="mb-3">Detalles de la orden</h6>
+
+          <div class="mb-2">
+            {{ pedido_form.Fecha.label_tag }}
+            {{ pedido_form.Fecha|add_class:"form-control" }}
+            {{ pedido_form.Fecha.errors }}
+          </div>
+
+          <div class="mb-2">
+            {{ pedido_form.Coste.label_tag }}
+            {{ pedido_form.Coste|add_class:"form-control" }}
+            {{ pedido_form.Coste.errors }}
+          </div>
+
+          <div class="mb-2">
+            {{ pedido_form.Abono.label_tag }}
+            {{ pedido_form.Abono|add_class:"form-control" }}
+            {{ pedido_form.Abono.errors }}
+          </div>
+
+          <div class="mb-2">
+            {{ pedido_form.Restante.label_tag }}
+            {{ pedido_form.Restante|add_class:"form-control" }}
+            {{ pedido_form.Restante.errors }}
+          </div>
+
+        </div>
+      </div>
+    </div>
+
+    <div class="d-flex justify-content-end">
+      <button type="submit" class="btn btn-primary">Siguiente</button>
+    </div>
+  </form>
+</div>
+{% endblock %}
