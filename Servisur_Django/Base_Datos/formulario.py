@@ -2,22 +2,20 @@ from django import forms
 from django.utils.translation import gettext_lazy as _
 from .models import Cliente, Pedido, Marca, Modelo, Dispositivo
 
+# Formulario para registrar un cliente nuevo
 class ClienteForm(forms.ModelForm):
     class Meta:
         model = Cliente
         fields = ['Nombre', 'Apellido', 'Numero_telefono', 'Direccion', 'Rut']
         widgets = {
-            'Nombre': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Nombre'}),
-            'Apellido': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Apellido'}),
-            'Numero_telefono': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Teléfono'}),
-            'Direccion': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Dirección'}),
-            'Rut': forms.NumberInput(attrs={'class': 'form-control', 'placeholder': 'RUT'}),
-        }
-        labels = {
-            'Numero_telefono': _('Número'),
-            'Rut': _('RUT'),
+            'Nombre': forms.TextInput(attrs={'class': 'form-control'}),
+            'Apellido': forms.TextInput(attrs={'class': 'form-control'}),
+            'Numero_telefono': forms.TextInput(attrs={'class': 'form-control'}),
+            'Direccion': forms.TextInput(attrs={'class': 'form-control'}),
+            'Rut': forms.NumberInput(attrs={'class': 'form-control'}),
         }
 
+    # Validación para evitar duplicados de RUT
     def clean_Rut(self):
         rut = self.cleaned_data.get('Rut')
         if rut and Cliente.objects.filter(Rut=rut).exists():
@@ -25,16 +23,15 @@ class ClienteForm(forms.ModelForm):
         return rut
 
 
+# Formulario para registrar un pedido (orden de reparación)
 class PedidoForm(forms.ModelForm):
     Cliente = forms.ModelChoiceField(
         queryset=Cliente.objects.filter(Activo=True),
-        empty_label='Seleccione Cliente',
         required=False,
         widget=forms.Select(attrs={'class': 'form-select'})
     )
     Dispositivo = forms.ModelChoiceField(
         queryset=Dispositivo.objects.filter(Activo=True),
-        empty_label='Seleccione Dispositivo',
         required=False,
         widget=forms.Select(attrs={'class': 'form-select'})
     )
@@ -43,13 +40,15 @@ class PedidoForm(forms.ModelForm):
         model = Pedido
         fields = ['Fecha', 'Coste', 'Abono', 'Restante', 'Cliente', 'Dispositivo']
         widgets = {
-            'Fecha': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'dd/mm/YYYY'}),
-            'Coste': forms.NumberInput(attrs={'class': 'form-control', 'placeholder': 'Costo total'}),
-            'Abono': forms.NumberInput(attrs={'class': 'form-control', 'placeholder': 'Abono'}),
-            'Restante': forms.NumberInput(attrs={'class': 'form-control', 'placeholder': 'Restante'}),
+            'Fecha': forms.DateInput(attrs={'type': 'date', 'class': 'form-control', 'id': 'id_pedido-Fecha'}),
+            'Coste': forms.NumberInput(attrs={'class': 'form-control', 'id': 'id_pedido-Coste'}),
+            'Abono': forms.NumberInput(attrs={'class': 'form-control', 'id': 'id_pedido-Abono'}),
+            'Restante': forms.NumberInput(attrs={'class': 'form-control', 'id': 'id_pedido-Restante'}),
         }
 
 
+
+# Formulario para registrar una nueva marca
 class MarcaForm(forms.ModelForm):
     class Meta:
         model = Marca
@@ -58,6 +57,7 @@ class MarcaForm(forms.ModelForm):
             'Marca': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Nombre de la marca'}),
         }
 
+    # Validación para evitar duplicados de marca
     def clean_Marca(self):
         nombre = self.cleaned_data.get('Marca', '').strip()
         if nombre and Marca.objects.filter(Marca__iexact=nombre).exists():
@@ -65,7 +65,9 @@ class MarcaForm(forms.ModelForm):
         return nombre
 
 
+# Formulario para registrar un modelo de dispositivo
 class ModeloForm(forms.ModelForm):
+    # Campo para seleccionar marca
     Marca = forms.ModelChoiceField(
         queryset=Marca.objects.all(),
         empty_label='Seleccione Marca',
@@ -80,6 +82,7 @@ class ModeloForm(forms.ModelForm):
             'Modelo': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Nombre del modelo'}),
         }
 
+    # Validación para evitar duplicados de modelo
     def clean_Modelo(self):
         nombre = self.cleaned_data.get('Modelo', '').strip()
         if nombre and Modelo.objects.filter(Modelo__iexact=nombre).exists():
@@ -87,7 +90,9 @@ class ModeloForm(forms.ModelForm):
         return nombre
 
 
+# Formulario para registrar un dispositivo específico
 class DispositivoForm(forms.ModelForm):
+    # Campo para seleccionar modelo
     modelo = forms.ModelChoiceField(
         queryset=Modelo.objects.all(),
         empty_label='Seleccione modelo',
@@ -105,8 +110,14 @@ class DispositivoForm(forms.ModelForm):
         }
 
 
+# Formulario de login para autenticación de usuarios
 class LoginForm(forms.Form):
-    username = forms.CharField(label='Usuario', max_length=100,
-                               widget=forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Usuario'}))
-    password = forms.CharField(label='Contraseña',
-                               widget=forms.PasswordInput(attrs={'class': 'form-control', 'placeholder': 'Contraseña'}))
+    username = forms.CharField(
+        label='Usuario',
+        max_length=100,
+        widget=forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Usuario'})
+    )
+    password = forms.CharField(
+        label='Contraseña',
+        widget=forms.PasswordInput(attrs={'class': 'form-control', 'placeholder': 'Contraseña'})
+    )

@@ -1,48 +1,45 @@
+/* Fondo institucional */
 body {
   margin: 0;
   padding: 0;
   font-family: "Segoe UI", sans-serif;
-  background: linear-gradient(
-    to right,
-    rgba(66, 168, 161, 0.2),
-    rgba(35, 144, 137, 0.2)
-  );
+  background: linear-gradient(180deg, #f6f9fc, #eef4fb);
+  color: #0f1724;
 }
 
+/* Contenedor principal */
 .container {
-  max-width: 1000px;
+  max-width: 1100px;
   margin: 40px auto;
-  background-color: white;
   padding: 30px;
   border-radius: 12px;
-  box-shadow: 0 0 15px rgba(0, 0, 0, 0.1);
+  background: linear-gradient(180deg, #ffffff, #fbfdff);
+  box-shadow: 0 0 20px rgba(11, 28, 70, 0.04);
 }
 
+/* Título principal */
 h2 {
   text-align: center;
   margin-bottom: 30px;
-  color: #239089;
+  color: #0b5ed7;
 }
 
-.busqueda-especifica,
-.busqueda-fecha {
-  margin-bottom: 30px;
-}
-
-.busqueda-especifica h3,
-.busqueda-fecha h3 {
+/* Subtítulos */
+h3 {
   margin-bottom: 10px;
-  color: #333;
+  color: #052235;
 }
 
-form {
+/* Formularios de búsqueda */
+.filtro-form {
   display: flex;
   flex-wrap: wrap;
   gap: 10px;
+  margin-bottom: 20px;
 }
 
-form input,
-form button {
+.filtro-form input,
+.filtro-form button {
   padding: 8px;
   border: 1px solid #ccc;
   border-radius: 6px;
@@ -50,13 +47,23 @@ form button {
   flex: 1 1 200px;
 }
 
-form button {
-  background-color: #42a8a1;
+.filtro-form button {
+  background-color: #0b5ed7;
   color: white;
   border: none;
   cursor: pointer;
 }
 
+/* Tarjetas de búsqueda */
+.info-card {
+  background: linear-gradient(180deg, #fff, #fbfbfd);
+  border-radius: 10px;
+  padding: 1rem;
+  box-shadow: 0 10px 30px rgba(15, 15, 30, 0.06);
+  margin-bottom: 2rem;
+}
+
+/* Tabla de resultados */
 .table-container {
   overflow-x: auto;
 }
@@ -74,23 +81,53 @@ form button {
 }
 
 .historial-table th {
-  background-color: #f0f0f0;
-  color: #333;
+  background-color: #eef4fb;
+  color: #0f1724;
 }
 
 .historial-table tr:hover {
-  background-color: #f9f9f9;
+  background-color: #f6f9fc;
 }
 
 .no-data {
   text-align: center;
   padding: 20px;
-  color: #999;
+  color: #6c757d;
 }
 
+/* Animaciones */
+.animate-fade-in {
+  animation: fadeIn 0.8s ease both;
+}
+
+.animate-slide-up {
+  animation: slideUp 0.7s ease both;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes slideUp {
+  from {
+    transform: translateY(12px);
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+/* Responsive */
 @media (max-width: 600px) {
-  form input,
-  form button {
+  .filtro-form input,
+  .filtro-form button {
     flex: 1 1 100%;
   }
 
@@ -98,5 +135,9 @@ form button {
   .historial-table td {
     font-size: 13px;
     padding: 8px;
+  }
+
+  .container {
+    padding: 20px;
   }
 }

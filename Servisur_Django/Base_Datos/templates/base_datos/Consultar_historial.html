@@ -8,34 +8,34 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   </head>
   <body>
-    <div class="container">
-      <h2>📋 Historial de Reparaciones</h2>
+    <main class="container animate-fade-in">
+      <h2 class="hero-dark">📋 Historial de Reparaciones</h2>
 
-      <!-- 🔍 Buscar por RUT o N° Orden -->
-      <div class="busqueda-especifica">
+      <!-- 🔍 Sector 1: búsqueda por RUT o N° Orden -->
+      <section class="info-card animate-slide-up">
         <h3>Buscar por RUT o N° de Orden</h3>
-        <form method="get">
+        <form method="get" class="filtro-form">
           <input type="text" name="rut" placeholder="RUT" />
           <input type="text" name="orden" placeholder="N° Orden" />
           <button type="submit">Buscar</button>
         </form>
-      </div>
+      </section>
 
-      <!-- 📅 Buscar por Fecha -->
-      <div class="busqueda-fecha">
+      <!-- 📅 Sector 2: búsqueda por Fecha -->
+      <section class="info-card animate-slide-up">
         <h3>Buscar por Fecha</h3>
-        <form method="get">
+        <form method="get" class="filtro-form">
           <input type="date" name="fecha" />
           <button type="submit">Buscar</button>
         </form>
-      </div>
+      </section>
 
       <!-- 📊 Resultados -->
-      <div class="table-container">
-        <table class="historial-table">
+      <section class="ticket-info animate-fade-in" style="padding: 1rem">
+        <table class="historial-table" style="width: 100%">
           <thead>
             <tr>
-              <th>Nombre</th>
+              <th>Número</th>
               <th>Apellido</th>
               <th>N° Orden</th>
               <th>Fecha</th>
@@ -59,15 +59,15 @@
             </tr>
             {% empty %}
             <tr>
-              <td colspan="8" class="no-data">
+              <td colspan="8" class="text-muted">
                 No hay reparaciones registradas.
               </td>
             </tr>
             {% endfor %}
           </tbody>
         </table>
-      </div>
-    </div>
+      </section>
+    </main>
 
     <script src="{% static 'js/historial.js' %}"></script>
   </body>
