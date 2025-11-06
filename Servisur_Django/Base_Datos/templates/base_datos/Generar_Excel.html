@@ -1,0 +1,72 @@
+{% extends "base_datos/base.html" %}
+<!-- Comentario anti errores -->
+{% load static %}
+<!-- Comentario anti errores -->
+{% block title %}Generar Excel - Servisur{% endblock %}
+<!-- Comentario anti errores -->
+{% block content %}
+<link rel="stylesheet" href="{% static 'css/panel.css' %}" />
+
+<div class="d-flex flex-column min-vh-100">
+  <div class="container py-4">
+    <h3 class="mb-3 text-secondary">📊 Generar Excel de Reparaciones</h3>
+
+    <form method="get" action="{% url 'generar_excel' %}">
+      <!-- 🗓️ Sección 1: Filtro por rango de fechas -->
+      <div class="card p-3 mb-4">
+        <h6 class="mb-3">Filtrar por fecha</h6>
+        <div class="row gx-3 gy-2">
+          <div class="col-md-6">
+            <label for="fecha_inicio" class="form-label">Desde</label>
+            <input
+              type="date"
+              id="fecha_inicio"
+              name="fecha_inicio"
+              class="form-control"
+              required
+            />
+          </div>
+          <div class="col-md-6">
+            <label for="fecha_fin" class="form-label">Hasta</label>
+            <input
+              type="date"
+              id="fecha_fin"
+              name="fecha_fin"
+              class="form-control"
+              required
+            />
+          </div>
+        </div>
+      </div>
+
+      <!-- 📦 Sección 2: Filtro opcional por estado -->
+      <div class="card p-3 mb-4">
+        <h6 class="mb-3">Filtrar por estado (opcional)</h6>
+        <select name="estado" class="form-select">
+          <option value="">Todos los estados</option>
+          <option value="pendiente">Pendiente</option>
+          <option value="en_proceso">En proceso</option>
+          <option value="completado">Completado</option>
+          <option value="entregado">Entregado</option>
+        </select>
+      </div>
+
+      <!-- 🔘 Botón generar -->
+      <div class="d-flex justify-content-end">
+        <button type="submit" class="btn btn-success">Generar Excel</button>
+      </div>
+    </form>
+  </div>
+
+  <!-- 📌 Footer institucional -->
+  <footer class="mt-auto text-center small text-muted">
+    <hr />
+    <p class="mb-1">
+      Sistema Servisur &copy; {{ now|date:"Y" }} — Generación de Excel
+    </p>
+    <p class="mb-0">Desarrollado por el equipo técnico | Versión 1.0</p>
+  </footer>
+</div>
+
+<script src="{% static 'js/generar_excel.js' %}"></script>
+{% endblock %}
