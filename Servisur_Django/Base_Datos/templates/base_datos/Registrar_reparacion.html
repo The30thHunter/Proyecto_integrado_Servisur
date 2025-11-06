@@ -38,18 +38,166 @@
       <div class="col-lg-6">
         <div class="card mb-3 p-3">
           <h6 class="mb-3">Datos del equipo</h6>
-          {{ dispositivo_form.as_p }}
+
+          <!-- 🏷️ Marca -->
+          <div class="mb-2">
+            <label for="marca-select">Marca</label>
+            <select
+              id="marca-select"
+              name="dispositivo-Marca"
+              class="form-select"
+              required
+            >
+              <option value="">Seleccione marca</option>
+              {% for marca in dispositivo_form.fields.Marca.queryset %}
+              <option value="{{ marca.id }}">{{ marca.Marca }}</option>
+              {% endfor %}
+              <option value="agregar_marca">➕ Agregar nueva marca</option>
+            </select>
+            <div class="invalid-feedback">Selecciona una marca válida.</div>
+          </div>
+
+          <!-- ✏️ Campo para nueva marca -->
+          <div
+            id="nuevo-bloque-marca-modelo"
+            class="mb-2"
+            style="display: none"
+          >
+            <label for="nueva_marca">Nueva marca</label>
+            <input
+              type="text"
+              id="nueva_marca"
+              name="nueva_marca"
+              class="form-control"
+              placeholder="Ej: Rednote"
+              autocomplete="off"
+            />
+            <div class="invalid-feedback">
+              Ingresa el nombre de la nueva marca.
+            </div>
+          </div>
+
+          <!-- 📦 Modelo dinámico -->
+          <div class="mb-2">
+            <label for="modelo-select">Modelo</label>
+            <select
+              id="modelo-select"
+              name="dispositivo-modelo"
+              class="form-select"
+              disabled
+            >
+              <option value="">Seleccione modelo</option>
+            </select>
+            <div class="invalid-feedback">
+              Selecciona un modelo válido o agrega uno nuevo.
+            </div>
+          </div>
+
+          <!-- ➕ Campo para agregar nuevo modelo -->
+          <div id="nuevo-modelo-input" class="mb-2" style="display: none">
+            <label for="nuevo_modelo">Nuevo modelo</label>
+            <input
+              type="text"
+              id="nuevo_modelo"
+              name="nuevo_modelo"
+              class="form-control"
+              placeholder="Ej: Galaxy A51"
+              autocomplete="off"
+            />
+            <div class="invalid-feedback">
+              Ingresa el nombre del nuevo modelo.
+            </div>
+          </div>
+
+          <!-- 🛠️ Tipo de falla -->
+          <div class="mb-2">
+            <label for="tipo-falla-select">Tipo de falla</label>
+            <select
+              id="tipo-falla-select"
+              name="dispositivo-Tipo_de_falla"
+              class="form-select"
+              required
+            >
+              <option value="">Seleccione tipo de falla</option>
+              {% for falla in dispositivo_form.fields.Tipo_de_falla.queryset %}
+              <option value="{{ falla.id }}">{{ falla.nombre }}</option>
+              {% endfor %}
+              <option value="agregar_falla">
+                ➕ Agregar nuevo tipo de falla
+              </option>
+            </select>
+          </div>
+
+          <!-- ✏️ Campo para nueva falla -->
+          <div id="nuevo-falla-input" class="mb-2" style="display: none">
+            <label for="nueva_falla">Nuevo tipo de falla</label>
+            <input
+              type="text"
+              id="nueva_falla"
+              name="nueva_falla"
+              class="form-control"
+              placeholder="Ej: No enciende"
+              autocomplete="off"
+            />
+          </div>
+
+          <!-- ✏️ Campo para nueva reparación -->
+          <div id="nuevo-reparacion-input" class="mb-2" style="display: none">
+            <label for="nueva_reparacion">Nuevo tipo de reparación</label>
+            <input
+              type="text"
+              id="nueva_reparacion"
+              name="nueva_reparacion"
+              class="form-control"
+              placeholder="Ej: Cambio de pantalla"
+              autocomplete="off"
+            />
+          </div>
+
+          <!-- 🔒 Código de bloqueo -->
+          <div class="mb-2">
+            <label for="id_dispositivo-Codigo_Bloqueo">Código de bloqueo</label>
+            <input
+              type="text"
+              id="id_dispositivo-Codigo_Bloqueo"
+              name="dispositivo-Codigo_Bloqueo"
+              class="form-control"
+              placeholder="Ej: 1234, patrón Z, sin bloqueo"
+            />
+            <div class="invalid-feedback">
+              Ingresa un código de bloqueo válido.
+            </div>
+          </div>
         </div>
 
         <div class="card mb-3 p-3">
           <h6 class="mb-3">Detalles de la orden</h6>
-          {{ pedido_form.as_p }}
+
+          <div class="mb-2">
+            {{ pedido_form.Fecha.label_tag }} {{ pedido_form.Fecha }} {{
+            pedido_form.Fecha.errors }}
+          </div>
+
+          <div class="mb-2">
+            {{ pedido_form.Coste.label_tag }} {{ pedido_form.Coste }} {{
+            pedido_form.Coste.errors }}
+          </div>
+
+          <div class="mb-2">
+            {{ pedido_form.Abono.label_tag }} {{ pedido_form.Abono }} {{
+            pedido_form.Abono.errors }}
+          </div>
+
+          <div class="mb-2">
+            {{ pedido_form.Restante.label_tag }} {{ pedido_form.Restante }} {{
+            pedido_form.Restante.errors }}
+          </div>
         </div>
       </div>
     </div>
 
     <div class="d-flex justify-content-end">
-      <button type="submit" class="btn btn-primary">Siguiente</button>
+      <button type="submit" class="btn btn-primary">Registrar</button>
     </div>
   </form>
 </div>

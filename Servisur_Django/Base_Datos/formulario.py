@@ -1,8 +1,8 @@
 from django import forms
 from django.utils.translation import gettext_lazy as _
-from .models import Cliente, Pedido, Marca, Modelo, Dispositivo
+from .models import Cliente, Pedido, Marca, Modelo, Dispositivo, TipoFalla
 
-# Formulario para registrar un cliente nuevo
+# 🧍 Formulario para registrar un cliente nuevo
 class ClienteForm(forms.ModelForm):
     class Meta:
         model = Cliente
@@ -15,15 +15,13 @@ class ClienteForm(forms.ModelForm):
             'Rut': forms.NumberInput(attrs={'class': 'form-control'}),
         }
 
-    # Validación para evitar duplicados de RUT
     def clean_Rut(self):
         rut = self.cleaned_data.get('Rut')
         if rut and Cliente.objects.filter(Rut=rut).exists():
             raise forms.ValidationError("Ya existe un cliente con este RUT.")
         return rut
 
-
-# Formulario para registrar un pedido (orden de reparación)
+# 📋 Formulario para registrar un pedido (orden de reparación)
 class PedidoForm(forms.ModelForm):
     Cliente = forms.ModelChoiceField(
         queryset=Cliente.objects.filter(Activo=True),
@@ -46,9 +44,7 @@ class PedidoForm(forms.ModelForm):
             'Restante': forms.NumberInput(attrs={'class': 'form-control', 'id': 'id_pedido-Restante'}),
         }
 
-
-
-# Formulario para registrar una nueva marca
+# 🏷️ Formulario para registrar una nueva marca
 class MarcaForm(forms.ModelForm):
     class Meta:
         model = Marca
@@ -57,17 +53,14 @@ class MarcaForm(forms.ModelForm):
             'Marca': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Nombre de la marca'}),
         }
 
-    # Validación para evitar duplicados de marca
     def clean_Marca(self):
         nombre = self.cleaned_data.get('Marca', '').strip()
         if nombre and Marca.objects.filter(Marca__iexact=nombre).exists():
             raise forms.ValidationError("Ya existe una marca con ese nombre.")
         return nombre
 
-
-# Formulario para registrar un modelo de dispositivo
+# 📦 Formulario para registrar un modelo de dispositivo
 class ModeloForm(forms.ModelForm):
-    # Campo para seleccionar marca
     Marca = forms.ModelChoiceField(
         queryset=Marca.objects.all(),
         empty_label='Seleccione Marca',
@@ -82,35 +75,61 @@ class ModeloForm(forms.ModelForm):
             'Modelo': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Nombre del modelo'}),
         }
 
-    # Validación para evitar duplicados de modelo
-    def clean_Modelo(self):
-        nombre = self.cleaned_data.get('Modelo', '').strip()
-        if nombre and Modelo.objects.filter(Modelo__iexact=nombre).exists():
-            raise forms.ValidationError("Ya existe un modelo con ese nombre.")
-        return nombre
+    def clean(self):
+        cleaned_data = super().clean()
+        nombre = cleaned_data.get('Modelo', '').strip()
+        marca = cleaned_data.get('Marca')
 
+        if nombre and marca:
+            existe = Modelo.objects.filter(Modelo__iexact=nombre, Marca=marca).exists()
+            if existe:
+                raise forms.ValidationError("Ya existe ese modelo para la marca seleccionada.")
 
-# Formulario para registrar un dispositivo específico
+# 💻 Formulario para registrar un dispositivo específico
 class DispositivoForm(forms.ModelForm):
-    # Campo para seleccionar modelo
+    Marca = forms.ModelChoiceField(
+        queryset=Marca.objects.all(),
+        empty_label='Seleccione marca',
+        widget=forms.Select(attrs={'class': 'form-select', 'id': 'marca-select'})
+    )
+
     modelo = forms.ModelChoiceField(
-        queryset=Modelo.objects.all(),
-        empty_label='Seleccione modelo',
+        queryset=Modelo.objects.none(),
         required=False,
-        widget=forms.Select(attrs={'class': 'form-select'})
+        widget=forms.Select(attrs={'class': 'form-select', 'id': 'modelo-select'})
+    )
+
+    Tipo_de_falla = forms.ModelChoiceField(
+        queryset=TipoFalla.objects.all(),
+        empty_label='Seleccione tipo de falla',
+        widget=forms.Select(attrs={'class': 'form-select', 'id': 'tipo-falla-select'})
+    )
+
+    Codigo_Bloqueo = forms.CharField(
+        required=False,
+        widget=forms.TextInput(attrs={
+            'class': 'form-control',
+            'placeholder': 'Ej: 1234, patrón Z, sin bloqueo'
+        })
     )
 
     class Meta:
         model = Dispositivo
-        fields = ['Nombre', 'Trabajo_realizado', 'Codigo_Bloqueo', 'modelo']
-        widgets = {
-            'Nombre': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Nombre del equipo (ej. iPhone 11)'}),
-            'Trabajo_realizado': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Trabajo a realizar'}),
-            'Codigo_Bloqueo': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Código de bloqueo / contraseña'}),
-        }
+        fields = ['Marca', 'modelo', 'Tipo_de_falla', 'Codigo_Bloqueo']
 
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
 
-# Formulario de login para autenticación de usuarios
+        if 'Marca' in self.data:
+            try:
+                marca_id = int(self.data.get('Marca'))
+                self.fields['modelo'].queryset = Modelo.objects.filter(Marca_id=marca_id)
+            except (ValueError, TypeError):
+                self.fields['modelo'].queryset = Modelo.objects.none()
+        elif self.instance.pk and self.instance.Marca:
+            self.fields['modelo'].queryset = Modelo.objects.filter(Marca=self.instance.Marca)
+
+# 🔐 Formulario de login para autenticación de usuarios
 class LoginForm(forms.Form):
     username = forms.CharField(
         label='Usuario',
