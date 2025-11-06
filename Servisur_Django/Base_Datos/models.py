@@ -62,10 +62,10 @@ class Pedido(models.Model):
     Coste = models.IntegerField()
     Abono = models.IntegerField()
     Restante = models.IntegerField()
-    Dispositivo = models.ForeignKey(Dispositivo, on_delete=models.SET_NULL, related_name="pedidos")
+    Dispositivo = models.ForeignKey(Dispositivo, on_delete=models.SET_NULL, null=True, related_name="pedidos")
     Activo = models.BooleanField(default=True)
     Estado = models.CharField(max_length=3, choices=ESTADOS, default='REG')
-    Tipo_de_falla = models.models.CharField(max_length=50, null=False)
+    Tipo_de_falla = models.CharField(max_length=50, null=False)
 
 
     def __str__(self):

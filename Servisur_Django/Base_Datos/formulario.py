@@ -1,6 +1,6 @@
 from django import forms
 from django.utils.translation import gettext_lazy as _
-from .models import Cliente, Pedido, Marca, Modelo, Dispositivo, TipoFalla
+from .models import Cliente, Pedido, Marca, Modelo, Dispositivo
 
 # 🧍 Formulario para registrar un cliente nuevo
 class ClienteForm(forms.ModelForm):
@@ -99,10 +99,12 @@ class DispositivoForm(forms.ModelForm):
         widget=forms.Select(attrs={'class': 'form-select', 'id': 'modelo-select'})
     )
 
-    Tipo_de_falla = forms.ModelChoiceField(
-        queryset=TipoFalla.objects.all(),
-        empty_label='Seleccione tipo de falla',
-        widget=forms.Select(attrs={'class': 'form-select', 'id': 'tipo-falla-select'})
+    Tipo_de_falla = forms.CharField(
+        required=True,
+        widget=forms.TextInput(attrs={
+            'class': 'form-control',
+            'placeholder': 'Ingrese la falla aqui'
+        })
     )
 
     Codigo_Bloqueo = forms.CharField(

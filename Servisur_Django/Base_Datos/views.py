@@ -9,8 +9,7 @@ from django.http import JsonResponse
 from django.views.decorators.csrf import csrf_exempt
 
 from .models import (
-    Cliente, Pedido, Marca, Modelo, Dispositivo,
-    TipoFalla, Reparacion
+    Cliente, Pedido, Marca, Modelo, Dispositivo
 )
 from .formulario import LoginForm, ClienteForm, DispositivoForm, PedidoForm
 
