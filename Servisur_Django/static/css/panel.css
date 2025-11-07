@@ -345,3 +345,48 @@ footer {
   background: linear-gradient(180deg, #ffffff, #f6f9fc);
   border-top: 1px solid rgba(11, 28, 70, 0.06);
 }
+
+
+/* Contenedor ancho específico para pantallas grandes */
+.wide-container {
+  max-width: 1300px; /* aumenta a 1300px; ajusta a 1400px si quieres aún más */
+  margin-left: auto;
+  margin-right: auto;
+  padding-left: 1rem;
+  padding-right: 1rem;
+}
+
+/* Hacer que la tarjeta del formulario se vea más ancha visualmente */
+.wide-container .card {
+  padding: 1rem 1.25rem;
+}
+
+/* Forzar que la tabla use todo el ancho disponible */
+.wide-container .table-responsive {
+  overflow-x: auto;
+}
+.wide-container table.table {
+  width: 100%;
+  min-width: 1100px; /* evita que columnas se compriman demasiado; ajusta si es necesario */
+  table-layout: auto;
+}
+
+/* Inputs más anchos (mejor visual en columnas) */
+.wide-container .form-control,
+.wide-container .form-select {
+  min-height: 38px;
+  padding: 0.45rem 0.6rem;
+}
+
+/* Reduce espacio interno en celdas para mostrar más columnas */
+.wide-container table.table td,
+.wide-container table.table th {
+  padding: 0.55rem 0.6rem;
+}
+
+/* Ajustes responsive: en pantallas pequeñas vuelve al comportamiento normal */
+@media (max-width: 991px) {
+  .wide-container { max-width: 100%; padding-left: .75rem; padding-right: .75rem; }
+  .wide-container table.table { min-width: 700px; }
+  .wide-container .form-control, .wide-container .form-select { padding: .4rem .5rem; }
+}
