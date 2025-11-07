@@ -109,51 +109,21 @@
             </div>
           </div>
 
-          <!-- 🛠️ Tipo de falla -->
+          <!-- input de falla -->
           <div class="mb-2">
-            <label for="tipo-falla-select">Tipo de falla</label>
-            <select
+            <label for="id_dispositivo-Tipo_de_falla">Falla del dispositivo</label>
+            <input
+              type="text"
               id="tipo-falla-select"
               name="dispositivo-Tipo_de_falla"
-              class="form-select"
-              required
-            >
-              <option value="">Seleccione tipo de falla</option>
-              {% for falla in dispositivo_form.fields.Tipo_de_falla.queryset %}
-              <option value="{{ falla.id }}">{{ falla.nombre }}</option>
-              {% endfor %}
-              <option value="agregar_falla">
-                ➕ Agregar nuevo tipo de falla
-              </option>
-            </select>
-          </div>
-
-          <!-- ✏️ Campo para nueva falla -->
-          <div id="nuevo-falla-input" class="mb-2" style="display: none">
-            <label for="nueva_falla">Nuevo tipo de falla</label>
-            <input
-              type="text"
-              id="nueva_falla"
-              name="nueva_falla"
               class="form-control"
-              placeholder="Ej: No enciende"
-              autocomplete="off"
+              placeholder="Ingrese falla del dispositivo"
             />
+            <div class="invalid-feedback">
+              Ingresa una falla valida.
+            </div>
           </div>
-
-          <!-- ✏️ Campo para nueva reparación -->
-          <div id="nuevo-reparacion-input" class="mb-2" style="display: none">
-            <label for="nueva_reparacion">Nuevo tipo de reparación</label>
-            <input
-              type="text"
-              id="nueva_reparacion"
-              name="nueva_reparacion"
-              class="form-control"
-              placeholder="Ej: Cambio de pantalla"
-              autocomplete="off"
-            />
-          </div>
-
+          
           <!-- 🔒 Código de bloqueo -->
           <div class="mb-2">
             <label for="id_dispositivo-Codigo_Bloqueo">Código de bloqueo</label>

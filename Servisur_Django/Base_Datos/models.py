@@ -58,7 +58,7 @@ class Pedido(models.Model):
         ('TER', 'Terminado'),
     ]
     N_Orden = models.AutoField(primary_key=True)
-    Fecha = models.CharField(max_length=30)
+    Fecha = models.DateField()
     Coste = models.IntegerField()
     Abono = models.IntegerField()
     Restante = models.IntegerField()

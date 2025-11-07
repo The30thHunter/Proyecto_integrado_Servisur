@@ -136,16 +136,16 @@ def consultar_historial(request):
     orden = request.GET.get('orden')
     fecha = request.GET.get('fecha')
 
-    reparaciones = Reparacion.objects.all()
+    reparaciones = Pedido.objects.all()
 
     if rut:
         reparaciones = reparaciones.filter(rut__icontains=rut)
     if orden:
         reparaciones = reparaciones.filter(numero_orden__icontains=orden)
     if fecha:
-        reparaciones = Reparacion.objects.filter(fecha_ingreso=fecha)
+        reparaciones = reparaciones.objects.filter(fecha_ingreso=fecha)
     else:
-        reparaciones = reparaciones.order_by('-fecha_ingreso')
+        reparaciones = reparaciones.order_by('-Fecha')
 
     return render(request, 'base_datos/Consultar_historial.html', {'reparaciones': reparaciones})
 
@@ -157,7 +157,7 @@ def obtener_modelos_por_marca(request):
 
 # 🔄 Obtener tipos de falla (AJAX)
 def obtener_tipos_falla(request):
-    tipos = TipoFalla.objects.all().values('id', 'nombre')
+    tipos = Pedido.objects.all().values('id', 'Tipo_de_falla')
     return JsonResponse(list(tipos), safe=False)
 
 # ➕ Agregar nuevo modelo (AJAX)
