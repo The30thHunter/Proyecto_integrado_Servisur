@@ -1,9 +1,6 @@
 {% extends "base_datos/base.html" %}
-<!-- 🧍 Datos del cliente -->
 {% load static %}
-<!-- 🧍 Datos del cliente -->
 {% block title %}Registrar Reparación - Servisur{% endblock %}
-<!-- 🧍 Datos del cliente -->
 {% block content %}
 <link rel="stylesheet" href="{% static 'css/panel.css' %}" />
 
@@ -14,9 +11,7 @@
     {% if messages %}
     <div class="mb-3">
       {% for message in messages %}
-      <div
-        class="alert {% if message.tags %}alert-{{ message.tags }}{% else %}alert-info{% endif %}"
-      >
+      <div class="alert {% if message.tags %}alert-{{ message.tags }}{% else %}alert-info{% endif %}">
         {{ message }}
       </div>
       {% endfor %}
@@ -32,85 +27,29 @@
           <div class="card mb-3 p-3 animate-slide-up">
             <h6 class="mb-3">🧍 Datos del cliente</h6>
 
-            <!-- Nombre -->
             <div class="mb-3">
-              <label for="id_Nombre">Nombre</label>
-              <input
-                type="text"
-                id="id_Nombre"
-                name="Nombre"
-                class="form-control"
-                placeholder="Ej: Juan"
-                required
-              />
-              <div class="invalid-feedback">
-                Debes ingresar al menos 5 caracteres.
-              </div>
+              <label for="id_cliente-Nombre">Nombre</label>
+              <input type="text" id="id_cliente-Nombre" name="cliente-Nombre" class="form-control" required />
             </div>
 
-            <!-- Apellido -->
             <div class="mb-3">
-              <label for="id_Apellido">Apellido</label>
-              <input
-                type="text"
-                id="id_Apellido"
-                name="Apellido"
-                class="form-control"
-                placeholder="Ej: Pérez"
-                required
-              />
-              <div class="invalid-feedback">
-                Debes ingresar al menos 5 caracteres.
-              </div>
+              <label for="id_cliente-Apellido">Apellido</label>
+              <input type="text" id="id_cliente-Apellido" name="cliente-Apellido" class="form-control" required />
             </div>
 
-            <!-- Número de teléfono -->
             <div class="mb-3">
-              <label for="id_Numero_telefono">Teléfono</label>
-              <input
-                type="tel"
-                id="id_Numero_telefono"
-                name="Numero_telefono"
-                class="form-control"
-                placeholder="Ej: +56912345678"
-                required
-              />
-              <div class="invalid-feedback">
-                Ingresa un número válido (ej: +56912345678).
-              </div>
+              <label for="id_cliente-Numero_telefono">Teléfono</label>
+              <input type="tel" id="id_cliente-Numero_telefono" name="cliente-Numero_telefono" class="form-control" required />
             </div>
 
-            <!-- Dirección -->
             <div class="mb-3">
-              <label for="id_Direccion">Dirección</label>
-              <input
-                type="text"
-                id="id_Direccion"
-                name="Direccion"
-                class="form-control"
-                placeholder="Ej: Av. Siempre Viva 123"
-                required
-              />
-              <div class="invalid-feedback">
-                Ingresa una dirección válida (mínimo 5 caracteres).
-              </div>
+              <label for="id_cliente-Direccion">Dirección</label>
+              <input type="text" id="id_cliente-Direccion" name="cliente-Direccion" class="form-control" required />
             </div>
 
-            <!-- RUT -->
             <div class="mb-3">
-              <label for="id_Rut">RUT</label>
-              <input
-                type="text"
-                id="id_Rut"
-                name="Rut"
-                class="form-control"
-                placeholder="Ej: 12345678K"
-                required
-              />
-              <div class="invalid-feedback">
-                Ingresa un RUT válido sin puntos ni guion y con dígito
-                verificador (ej: 12345678K).
-              </div>
+              <label for="id_cliente-Rut">RUT</label>
+              <input type="text" id="id_cliente-Rut" name="cliente-Rut" class="form-control" required />
             </div>
           </div>
         </div>
@@ -120,109 +59,42 @@
           <div class="card mb-3 p-3 animate-slide-up">
             <h6 class="mb-3">Datos del equipo</h6>
 
-            <!-- Marca -->
             <div class="mb-2">
               <label for="marca-select">Marca</label>
-              <select
-                id="marca-select"
-                name="dispositivo-Marca"
-                class="form-select"
-                required
-              >
+              <select id="marca-select" name="dispositivo-Marca" class="form-select" required>
                 <option value="">Seleccione marca</option>
                 {% for marca in dispositivo_form.fields.Marca.queryset %}
                 <option value="{{ marca.id }}">{{ marca.Marca }}</option>
                 {% endfor %}
                 <option value="agregar_marca">➕ Agregar nueva marca</option>
               </select>
-              <div class="invalid-feedback">Selecciona una marca válida.</div>
             </div>
 
-            <!-- Nueva marca -->
-            <div
-              id="nuevo-bloque-marca-modelo"
-              class="mb-2"
-              style="display: none"
-            >
+            <div id="nuevo-bloque-marca-modelo" class="mb-2" style="display: none">
               <label for="nueva_marca">Nueva marca</label>
-              <input
-                type="text"
-                id="nueva_marca"
-                name="nueva_marca"
-                class="form-control"
-                placeholder="Ej: Sony Ericsson"
-                autocomplete="off"
-              />
-              <div class="invalid-feedback">
-                Ingresa una marca válida (mínimo 4 caracteres, se permiten
-                espacios).
-              </div>
+              <input type="text" id="nueva_marca" name="nueva_marca" class="form-control" />
             </div>
 
-            <!-- Modelo -->
             <div class="mb-2">
               <label for="modelo-select">Modelo</label>
-              <select
-                id="modelo-select"
-                name="dispositivo-modelo"
-                class="form-select"
-                disabled
-              >
+              <select id="modelo-select" name="dispositivo-modelo" class="form-select" disabled>
                 <option value="">Seleccione modelo</option>
               </select>
-              <div class="invalid-feedback">
-                Selecciona un modelo válido o agrega uno nuevo.
-              </div>
             </div>
 
-            <!-- Nuevo modelo -->
             <div id="nuevo-modelo-input" class="mb-2" style="display: none">
               <label for="nuevo_modelo">Nuevo modelo</label>
-              <input
-                type="text"
-                id="nuevo_modelo"
-                name="nuevo_modelo"
-                class="form-control"
-                placeholder="Ej: Galaxy A51"
-                autocomplete="off"
-              />
-              <div class="invalid-feedback">
-                Ingresa el nombre del nuevo modelo.
-              </div>
+              <input type="text" id="nuevo_modelo" name="nuevo_modelo" class="form-control" />
             </div>
 
-            <!-- Tipo de falla -->
             <div class="mb-2">
               <label for="tipo_falla">Tipo de falla</label>
-              <textarea
-                id="tipo_falla"
-                name="tipo_falla"
-                class="form-control"
-                rows="3"
-                placeholder="Ej: No enciende, pantalla rota, no carga, etc."
-                required
-              ></textarea>
-              <div class="invalid-feedback">
-                Describe la falla con al menos 10 caracteres. Se permiten
-                letras, números y puntuación básica.
-              </div>
+              <textarea id="tipo_falla" name="dispositivo-Tipo_Falla" class="form-control" rows="3" required></textarea>
             </div>
 
-            <!-- Código de bloqueo -->
             <div class="mb-2">
-              <label for="id_dispositivo-Codigo_Bloqueo"
-                >Código de bloqueo</label
-              >
-              <input
-                type="text"
-                id="id_dispositivo-Codigo_Bloqueo"
-                name="dispositivo-Codigo_Bloqueo"
-                class="form-control"
-                placeholder="Ej: 1234, patrón Z, sin bloqueo"
-              />
-              <div class="invalid-feedback">
-                Ingresa un código de bloqueo válido.
-              </div>
+              <label for="id_dispositivo-Codigo_Bloqueo">Código de bloqueo</label>
+              <input type="text" id="id_dispositivo-Codigo_Bloqueo" name="dispositivo-Codigo_Bloqueo" class="form-control" />
             </div>
           </div>
         </div>
@@ -234,58 +106,22 @@
 
             <div class="mb-2">
               <label for="fecha_orden">Fecha de ingreso</label>
-              <input
-                type="date"
-                id="fecha_orden"
-                name="fecha_orden"
-                class="form-control"
-                required
-              />
-              <div class="invalid-feedback">
-                Ingresa una fecha válida. No puede estar vacía ni ser futura.
-              </div>
+              <input type="date" id="fecha_orden" name="pedido-Fecha" class="form-control" required />
             </div>
 
             <div class="mb-2">
               <label for="costo_total">Costo total</label>
-              <input
-                type="number"
-                id="costo_total"
-                name="costo_total"
-                class="form-control"
-                placeholder="Ej: 25000"
-                min="0"
-                required
-              />
-              <div class="invalid-feedback">
-                Ingresa un costo válido (mayor a 0).
-              </div>
+              <input type="number" id="costo_total" name="pedido-Coste" class="form-control" min="0" required />
             </div>
 
             <div class="mb-2">
               <label for="abono">Abono</label>
-              <input
-                type="number"
-                id="abono"
-                name="abono"
-                class="form-control"
-                placeholder="Ej: 10000"
-                min="0"
-              />
-              <div class="invalid-feedback">
-                El abono no puede ser mayor al costo.
-              </div>
+              <input type="number" id="abono" name="pedido-Abono" class="form-control" min="0" />
             </div>
 
             <div class="mb-2">
               <label for="restante">Restante</label>
-              <input
-                type="number"
-                id="restante"
-                name="restante"
-                class="form-control"
-                readonly
-              />
+              <input type="number" id="restante" name="pedido-Restante" class="form-control" readonly />
             </div>
           </div>
         </div>
@@ -297,12 +133,9 @@
     </form>
   </div>
 
-  <!-- 📌 Footer institucional -->
   <footer class="mt-auto text-center small text-muted">
     <hr />
-    <p class="mb-1">
-      Sistema Servisur &copy; {{ now|date:"Y" }} — Registro de Reparaciones
-    </p>
+    <p class="mb-1">Sistema Servisur &copy; {{ now|date:"Y" }} — Registro de Reparaciones</p>
     <p class="mb-0">Desarrollado por el equipo técnico | Versión 1.0</p>
   </footer>
 </div>

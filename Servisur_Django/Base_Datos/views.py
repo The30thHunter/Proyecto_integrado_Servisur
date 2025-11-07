@@ -31,67 +31,73 @@ def main_view(request):
     }
     return render(request, "base_datos/main.html", context)
 
-# 🛠️ Vista para registrar una reparación
+
+
 def registrar_reparacion_view(request):
     if request.method == "POST":
-        cliente_form = ClienteForm(request.POST, prefix="cliente")
-        dispositivo_form = DispositivoForm(request.POST, prefix="dispositivo")
-        pedido_form = PedidoForm(request.POST, prefix="pedido")
+        try:
+            with transaction.atomic():
+                # 🧍 Cliente
+                cliente = Cliente.objects.create(
+                    Nombre=request.POST.get("cliente-Nombre", "").strip(),
+                    Apellido=request.POST.get("cliente-Apellido", "").strip(),
+                    Numero_telefono=request.POST.get("cliente-Numero_telefono", "").strip(),
+                    Direccion=request.POST.get("cliente-Direccion", "").strip(),
+                    Rut=int(request.POST.get("cliente-Rut", "0")),
+                    Activo=True
+                )
 
-        nuevo_modelo_nombre = request.POST.get("nuevo_modelo", "").strip()
-        modelo_seleccionado = request.POST.get("dispositivo-modelo")
+                # 📦 Marca y Modelo
+                marca_id = request.POST.get("dispositivo-Marca")
+                nuevo_modelo_nombre = request.POST.get("nuevo_modelo", "").strip()
+                modelo_seleccionado = request.POST.get("dispositivo-modelo")
 
-        if cliente_form.is_valid() and dispositivo_form.is_valid() and pedido_form.is_valid():
-            try:
-                with transaction.atomic():
-                    cliente = cliente_form.save()
-                    dispositivo = dispositivo_form.save(commit=False)
-                    dispositivo.Activo = True
+                if marca_id == "agregar_marca":
+                    nueva_marca_nombre = request.POST.get("nueva_marca", "").strip()
+                    marca = Marca.objects.create(Marca=nueva_marca_nombre)
+                else:
+                    marca = Marca.objects.get(id=int(marca_id))
 
-                    if modelo_seleccionado == "agregar_nuevo" and nuevo_modelo_nombre:
-                        marca = dispositivo_form.cleaned_data.get("Marca")
-                        modelo_existente = Modelo.objects.filter(Modelo__iexact=nuevo_modelo_nombre, Marca=marca).first()
+                if modelo_seleccionado == "agregar_nuevo" and nuevo_modelo_nombre:
+                    modelo = Modelo.objects.create(Modelo=nuevo_modelo_nombre, Marca=marca)
+                else:
+                    modelo = Modelo.objects.get(id=int(modelo_seleccionado))
 
-                        if modelo_existente:
-                            dispositivo.modelo = modelo_existente
-                        else:
-                            nueva_instancia = Modelo.objects.create(
-                                Modelo=nuevo_modelo_nombre,
-                                Marca=marca
-                            )
-                            dispositivo.modelo = nueva_instancia
-                    else:
-                        try:
-                            dispositivo.modelo_id = int(modelo_seleccionado)
-                        except (TypeError, ValueError):
-                            messages.error(request, "Modelo seleccionado no válido.")
-                            raise Exception("Modelo inválido")
+                # 💻 Dispositivo
+                dispositivo = Dispositivo.objects.create(
+                    modelo=modelo,
+                    Codigo_Bloqueo=request.POST.get("dispositivo-Codigo_Bloqueo", "").strip(),
+                    rut=cliente,
+                    Activo=True
+                )
 
-                    dispositivo.save()
+                # 📋 Pedido
+                coste = int(request.POST.get("pedido-Coste", "0"))
+                abono = int(request.POST.get("pedido-Abono", "0"))
+                restante = coste - abono
 
-                    pedido = pedido_form.save(commit=False)
-                    pedido.Cliente = cliente
-                    pedido.Dispositivo = dispositivo
+                fecha_str = request.POST.get("pedido-Fecha")
+                fecha = timezone.datetime.strptime(fecha_str, "%Y-%m-%d").date() if fecha_str else timezone.localdate()
 
-                    if not pedido.Fecha:
-                        pedido.Fecha = timezone.localtime(timezone.now()).strftime("%d/%m/%Y")
-                    pedido.save()
+                pedido = Pedido.objects.create(
+                    Fecha=fecha,
+                    Coste=coste,
+                    Abono=abono,
+                    Restante=restante,
+                    Dispositivo=dispositivo,
+                    Estado='REG',
+                    Tipo_de_falla=request.POST.get("dispositivo-Tipo_Falla", "").strip(),
+                    Activo=True
+                )
 
                 messages.success(request, f"Reparación registrada correctamente (Orden: {pedido.N_Orden})")
-                return redirect('registrar_reparacion')
-            except Exception as e:
-                messages.error(request, f"Ocurrió un error al guardar: {str(e)}")
-        else:
-            messages.error(request, "Corrige los errores del formulario.")
-    else:
-        cliente_form = ClienteForm(prefix="cliente")
-        dispositivo_form = DispositivoForm(prefix="dispositivo")
-        pedido_form = PedidoForm(prefix="pedido")
+                return redirect("registrar_reparacion")
+
+        except Exception as e:
+            messages.error(request, f"Ocurrió un error al guardar: {str(e)}")
 
     context = {
-        "cliente_form": cliente_form,
-        "dispositivo_form": dispositivo_form,
-        "pedido_form": pedido_form,
+        "dispositivo_form": DispositivoForm(),  # Solo se usa para cargar marcas en el template
     }
     return render(request, "base_datos/registrar_reparacion.html", context)
 
@@ -136,18 +142,38 @@ def consultar_historial(request):
     orden = request.GET.get('orden')
     fecha = request.GET.get('fecha')
 
-    reparaciones = Pedido.objects.all()
+    pedidos = Pedido.objects.select_related('Dispositivo__rut', 'Dispositivo__modelo__Marca')
 
     if rut:
-        reparaciones = reparaciones.filter(rut__icontains=rut)
+        pedidos = pedidos.filter(Dispositivo__rut__Rut__icontains=rut)
     if orden:
-        reparaciones = reparaciones.filter(numero_orden__icontains=orden)
+        pedidos = pedidos.filter(N_Orden__icontains=orden)
     if fecha:
-        reparaciones = reparaciones.objects.filter(fecha_ingreso=fecha)
+        pedidos = pedidos.filter(Fecha=fecha)
     else:
-        reparaciones = reparaciones.order_by('-Fecha')
+        pedidos = pedidos.order_by('-Fecha')
+
+    # Adaptar los datos al formato que espera el template
+    reparaciones = []
+    for pedido in pedidos:
+        cliente = pedido.Dispositivo.rut
+        dispositivo = pedido.Dispositivo
+        modelo = dispositivo.modelo
+        marca = modelo.Marca if modelo else None
+
+        reparaciones.append({
+            'nombre': cliente.Nombre if cliente else '',
+            'apellido': cliente.Apellido if cliente else '',
+            'numero_orden': pedido.N_Orden,
+            'fecha_ingreso': pedido.Fecha,
+            'rut': cliente.Rut if cliente else '',
+            'marca': marca.Marca if marca else 'Sin marca',
+            'equipo': modelo.Modelo if modelo else 'Sin modelo',
+            'estado': dict(Pedido.ESTADOS).get(pedido.Estado, 'Desconocido'),
+        })
 
     return render(request, 'base_datos/Consultar_historial.html', {'reparaciones': reparaciones})
+
 
 # 🔄 Obtener modelos según marca (AJAX)
 def obtener_modelos_por_marca(request):
