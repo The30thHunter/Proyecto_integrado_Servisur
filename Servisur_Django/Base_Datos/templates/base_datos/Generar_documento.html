@@ -1,0 +1,251 @@
+{% extends "base_datos/base.html" %}
+{% load static %}
+{% block title %}Generar Boleta - Servisur{% endblock %}
+
+{% block content %}
+<link rel="stylesheet" href="{% static 'css/panel.css' %}">
+
+<div class="container-fluid wide-container py-4">
+  <div class="d-flex align-items-center justify-content-between mb-3">
+    <div>
+      <h3 class="mb-0 text-secondary">Generar Boleta</h3>
+      <small class="text-muted">Busca un registro y genera la boleta para imprimir</small>
+    </div>
+    <div>
+      <button id="btnExportAll" class="btn btn-outline-secondary btn-sm" disabled>Exportar seleccionado</button>
+    </div>
+  </div>
+
+  <!-- Filtros -->
+  <form id="filtroForm" class="card mb-3 p-3" method="get" action="">
+    <div class="row g-2">
+      <div class="col-md-3">
+        <label class="form-label small">Nro de orden</label>
+        <input name="orden" id="g_orden" type="text" class="form-control form-control-sm" placeholder="Ej: 123">
+      </div>
+
+      <div class="col-md-3">
+        <label class="form-label small">Fecha</label>
+        <input name="fecha" id="g_fecha" type="text" class="form-control form-control-sm" placeholder="dd/mm/YYYY">
+      </div>
+
+      <div class="col-md-3">
+        <label class="form-label small">Nro de documento</label>
+        <input name="doc" id="g_doc" type="text" class="form-control form-control-sm" placeholder="RUT / DNI / Pasaporte">
+      </div>
+
+      <div class="col-md-3">
+        <label class="form-label small">Nombre</label>
+        <input name="nombre" id="g_nombre" type="text" class="form-control form-control-sm" placeholder="Nombre o apellido">
+      </div>
+
+      <div class="col-md-3 mt-2">
+        <label class="form-label small">Modelo</label>
+        <input name="modelo" id="g_modelo" type="text" class="form-control form-control-sm" placeholder="Modelo">
+      </div>
+
+      <div class="col-md-3 mt-2">
+        <label class="form-label small">Trabajo a realizar</label>
+        <input name="trabajo" id="g_trabajo" type="text" class="form-control form-control-sm" placeholder="Pantalla, Mojado...">
+      </div>
+
+      <div class="col-md-3 d-flex align-items-end mt-2">
+        <button type="button" id="btnFiltrar" class="btn btn-primary btn-sm me-2">Aplicar filtro (cliente)</button>
+        <button type="reset" id="btnLimpiar" class="btn btn-outline-secondary btn-sm">Limpiar</button>
+      </div>
+    </div>
+  </form>
+
+  <!-- Tabla de resultados -->
+  <div class="table-responsive card p-0">
+    <table id="tablaBoletas" class="table table-hover align-middle mb-0">
+      <thead class="table-light">
+        <tr>
+          <th style="width:100px">Nro Orden</th>
+          <th style="min-width:220px">Nro documento</th>
+          <th style="min-width:220px">Nombre</th>
+          <th style="width:110px">Fecha</th>
+          <th style="min-width:180px">Modelo celular</th>
+          <th style="min-width:220px">Trabajo a realizar</th>
+          <th style="min-width:220px">Observaciones</th>
+          <th style="width:140px">Acción</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% if pedidos %}
+          {% for p in pedidos %}
+            <tr data-orden="{{ p.N_Orden }}"
+                data-fecha="{{ p.Fecha }}"
+                data-doc="{% if p.Dispositivo and p.Dispositivo.rut %}{{ p.Dispositivo.rut.Rut }}{% else %}-{% endif %}"
+                data-nombre="{% if p.Dispositivo and p.Dispositivo.rut %}{{ p.Dispositivo.rut.Nombre }} {{ p.Dispositivo.rut.Apellido }}{% else %}-{% endif %}"
+                data-modelo="{% if p.Dispositivo and p.Dispositivo.modelo %}{{ p.Dispositivo.modelo.Marca.Marca }} {{ p.Dispositivo.modelo.Modelo }}{% else %}-{% endif %}"
+                data-trabajo="{{ p.Tipo_de_falla|default:'' }}"
+                data-observaciones="{{ p.Dispositivo.Codigo_Bloqueo|default:'' }}">
+              <td class="td-orden">{{ p.N_Orden }}</td>
+              <td class="td-doc">{% if p.Dispositivo and p.Dispositivo.rut %}{{ p.Dispositivo.rut.Rut }}{% else %}-{% endif %}</td>
+              <td class="td-nombre">{% if p.Dispositivo and p.Dispositivo.rut %}{{ p.Dispositivo.rut.Nombre }} {{ p.Dispositivo.rut.Apellido }}{% else %}-{% endif %}</td>
+              <td class="td-fecha">{{ p.Fecha }}</td>
+              <td class="td-modelo">{% if p.Dispositivo and p.Dispositivo.modelo %}{{ p.Dispositivo.modelo.Marca.Marca }} {{ p.Dispositivo.modelo.Modelo }}{% else %}-{% endif %}</td>
+              <td class="td-trabajo">{{ p.Tipo_de_falla|default:"-" }}</td>
+              <td class="td-observaciones">{{ p.Dispositivo.Codigo_Bloqueo|default:"-" }}</td>
+              <td>
+                <div class="d-flex gap-2">
+                  <button type="button" class="btn btn-sm btn-outline-primary btn-imprimir" title="Imprimir boleta">Imprimir</button>
+                </div>
+              </td>
+            </tr>
+          {% endfor %}
+        {% else %}
+          <tr><td colspan="8" class="text-center text-muted">No hay registros para mostrar.</td></tr>
+        {% endif %}
+      </tbody>
+    </table>
+  </div>
+
+  <div class="mt-3 text-muted small">Nota: Esta vista prepara la boleta. Presiona Imprimir para abrir la vista de impresión del navegador.</div>
+</div>
+
+<!-- Bloque JS: generar boleta e imprimir (sin <script> embebido en el HTML generado) -->
+<script>
+(function () {
+  function normalize(str) { return (str||'').toString().trim(); }
+
+  function generarHtmlBoleta(data) {
+    return `
+      <!doctype html>
+      <html>
+      <head>
+        <meta charset="utf-8" />
+        <title>Boleta - Orden ${data.orden}</title>
+        <style>
+          body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial; padding:20px; color:#0f1724; }
+          .header { display:flex; align-items:center; gap:12px; margin-bottom:18px; }
+          .logo { width:86px; height:auto; }
+          .title { font-size:18px; font-weight:700; color:#0b5ed7; }
+          .meta { margin-top:6px; color:#6b7280; font-size:13px; }
+          .box { border:1px solid #e6eef9; padding:12px; border-radius:8px; margin-bottom:10px; }
+          table { width:100%; border-collapse:collapse; margin-top:6px; }
+          td { padding:6px 8px; vertical-align:top; }
+          .label { color:#6b7280; width:160px; font-weight:600; }
+          .value { color:#111827; }
+          .footer { margin-top:18px; font-size:13px; color:#6b7280; }
+          @media print { body { margin:0; } .no-print { display:none; } }
+        </style>
+      </head>
+      <body>
+        <div class="header">
+          <img class="logo" src="${location.origin + '/static/img/logo_servisur1.png'}" alt="Servisur">
+          <div>
+            <div class="title">Boleta de Recepción - Servisur</div>
+            <div class="meta">Orden ${data.orden} • Fecha ${data.fecha}</div>
+          </div>
+        </div>
+
+        <div class="box">
+          <table>
+            <tr><td class="label">Nro Orden</td><td class="value">${data.orden}</td></tr>
+            <tr><td class="label">Nro Documento</td><td class="value">${data.doc}</td></tr>
+            <tr><td class="label">Nombre</td><td class="value">${data.nombre}</td></tr>
+            <tr><td class="label">Fecha registro</td><td class="value">${data.fecha}</td></tr>
+            <tr><td class="label">Modelo celular</td><td class="value">${data.modelo}</td></tr>
+            <tr><td class="label">Trabajo a realizar</td><td class="value">${data.trabajo}</td></tr>
+            <tr><td class="label">Observaciones</td><td class="value">${data.observaciones}</td></tr>
+          </table>
+        </div>
+
+        <div class="footer">
+          <div>Firma cliente: ____________________________</div>
+          <div style="margin-top:8px">Firma técnico: ____________________________</div>
+        </div>
+      </body>
+      </html>
+    `;
+  }
+
+  // Manejar clic en "Imprimir" para cada fila
+  document.querySelectorAll('.btn-imprimir').forEach(btn => {
+    btn.addEventListener('click', function () {
+      const tr = this.closest('tr');
+      const data = {
+        orden: tr.getAttribute('data-orden') || tr.querySelector('.td-orden')?.textContent || '',
+        fecha: tr.getAttribute('data-fecha') || tr.querySelector('.td-fecha')?.textContent || '',
+        doc: tr.getAttribute('data-doc') || tr.querySelector('.td-doc')?.textContent || '',
+        nombre: tr.getAttribute('data-nombre') || tr.querySelector('.td-nombre')?.textContent || '',
+        modelo: tr.getAttribute('data-modelo') || tr.querySelector('.td-modelo')?.textContent || '',
+        trabajo: tr.getAttribute('data-trabajo') || tr.querySelector('.td-trabajo')?.textContent || '',
+        observaciones: tr.getAttribute('data-observaciones') || tr.querySelector('.td-observaciones')?.textContent || ''
+      };
+
+      const html = generarHtmlBoleta(data);
+      const w = window.open('', '_blank', 'width=700,height=900');
+      if (!w) {
+        alert('Por favor permita ventanas emergentes para imprimir.');
+        return;
+      }
+      w.document.open();
+      w.document.write(html);
+      w.document.close();
+
+      // Esperar a que la nueva ventana renderice recursos (logo) antes de imprimir
+      // Aumenta el timeout si el logo tarda en cargar
+      const waitForRender = 600;
+      setTimeout(() => {
+        try {
+          w.focus();
+          w.print();
+        } catch (e) {
+          console.warn('Error al invocar print:', e);
+        }
+        // cerrar la ventana después de imprimir (opcional)
+        setTimeout(() => {
+          try { w.close(); } catch (e) {}
+        }, 600);
+      }, waitForRender);
+    });
+  });
+
+  // Filtrado cliente (reutiliza función similar a Estado_reparacion)
+  const btnFiltrar = document.getElementById('btnFiltrar');
+  const btnLimpiar = document.getElementById('btnLimpiar');
+
+  function normalize(str){ return (str||'').toString().toLowerCase().trim(); }
+
+  function aplicarFiltro() {
+    const vOrden = normalize(document.getElementById('g_orden').value);
+    const vFecha = normalize(document.getElementById('g_fecha').value);
+    const vDoc = normalize(document.getElementById('g_doc').value);
+    const vNombre = normalize(document.getElementById('g_nombre').value);
+    const vModelo = normalize(document.getElementById('g_modelo').value);
+    const vTrabajo = normalize(document.getElementById('g_trabajo').value);
+
+    const rows = document.querySelectorAll('#tablaBoletas tbody tr');
+    rows.forEach(row => {
+      const orden = normalize(row.getAttribute('data-orden') || row.querySelector('.td-orden')?.textContent);
+      const fecha = normalize(row.getAttribute('data-fecha') || row.querySelector('.td-fecha')?.textContent);
+      const doc = normalize(row.getAttribute('data-doc') || row.querySelector('.td-doc')?.textContent);
+      const nombre = normalize(row.getAttribute('data-nombre') || row.querySelector('.td-nombre')?.textContent);
+      const modelo = normalize(row.getAttribute('data-modelo') || row.querySelector('.td-modelo')?.textContent);
+      const trabajo = normalize(row.getAttribute('data-trabajo') || row.querySelector('.td-trabajo')?.textContent);
+
+      let show = true;
+      if (vOrden && !orden.includes(vOrden)) show = false;
+      if (vFecha && !fecha.includes(vFecha)) show = false;
+      if (vDoc && !doc.includes(vDoc)) show = false;
+      if (vNombre && !nombre.includes(vNombre)) show = false;
+      if (vModelo && !modelo.includes(vModelo)) show = false;
+      if (vTrabajo && !trabajo.includes(vTrabajo)) show = false;
+
+      row.style.display = show ? '' : 'none';
+    });
+  }
+
+  if (btnFiltrar) btnFiltrar.addEventListener('click', aplicarFiltro);
+  if (btnLimpiar) btnLimpiar.addEventListener('click', function () {
+    setTimeout(() => aplicarFiltro(), 10);
+  });
+
+})();
+</script>
+
+
+{% endblock %}
