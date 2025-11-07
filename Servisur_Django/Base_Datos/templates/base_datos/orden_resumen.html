@@ -1,0 +1,200 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="es">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>Resumen de orden — ServiSur</title>
+    <link rel="stylesheet" href="{% static 'css/panel.css' %}" />
+  </head>
+  <body>
+    <main class="container panel">
+      <!-- Header -->
+      <header class="panel-header" role="banner">
+        <div class="brand">
+          <img
+            src="{% static 'img/logo.png' %}"
+            alt="ServiSur"
+            class="brand-logo"
+          />
+          <div class="brand-text">
+            <h1 class="brand-title">ServiSur</h1>
+            <p class="brand-sub">Resumen de orden</p>
+          </div>
+        </div>
+
+        <div class="actions-header">
+          <a href="{% url 'orden_editar' %}" class="btn btn-outline"
+            >Volver y editar</a
+          >
+          <a href="{% url 'orden_confirmar' %}" class="btn btn-primary"
+            >Confirmar</a
+          >
+          <button
+            type="button"
+            class="btn btn-secondary"
+            onclick="window.print()"
+          >
+            Imprimir
+          </button>
+        </div>
+      </header>
+
+      <!-- Body: detalles + ticket -->
+      <section class="panel-body grid">
+        <!-- Detalles completos (izquierda) -->
+        <article class="panel detalles" aria-labelledby="detalle-title">
+          <h2 id="detalle-title" class="panel-title">Datos del cliente</h2>
+
+          <div class="field-row">
+            <div class="field">
+              <label class="field-label">Nombre</label>
+              <div class="value">{{ orden.nombre }}</div>
+            </div>
+            <div class="field">
+              <label class="field-label">RUT</label>
+              <div class="value">{{ orden.rut }}</div>
+            </div>
+          </div>
+
+          <div class="field">
+            <label class="field-label">Dirección</label>
+            <div class="value">{{ orden.direccion }}</div>
+          </div>
+
+          <div class="field-row">
+            <div class="field">
+              <label class="field-label">Teléfono</label>
+              <div class="value">{{ orden.telefono }}</div>
+            </div>
+            <div class="field">
+              <label class="field-label">Email</label>
+              <div class="value">{{ orden.email }}</div>
+            </div>
+          </div>
+
+          <hr class="separator" />
+
+          <h3 class="panel-subtitle">Trabajo a realizar</h3>
+
+          <div class="field-row">
+            <div class="field">
+              <label class="field-label">Marca</label>
+              <div class="value">{{ orden.marca }}</div>
+            </div>
+            <div class="field">
+              <label class="field-label">Modelo</label>
+              <div class="value">{{ orden.modelo }}</div>
+            </div>
+          </div>
+
+          <div class="field">
+            <label class="field-label">Falla</label>
+            <div class="value prewrap">{{ orden.falla }}</div>
+          </div>
+
+          <div class="field-row">
+            <div class="field">
+              <label class="field-label">Mojado</label>
+              <div class="value">{{ orden.mojado|yesno:"Sí,No" }}</div>
+            </div>
+            <div class="field">
+              <label class="field-label">Clave de desbloqueo</label>
+              <div class="value">•••••• (protegido)</div>
+            </div>
+          </div>
+
+          <hr class="separator" />
+
+          <h3 class="panel-subtitle">Costos</h3>
+          <div class="field-row">
+            <div class="field">
+              <label class="field-label">Costo total</label>
+              <div class="value">${{ orden.costo }}</div>
+            </div>
+            <div class="field">
+              <label class="field-label">Abono</label>
+              <div class="value">${{ orden.abono }}</div>
+            </div>
+            <div class="field">
+              <label class="field-label">Restante</label>
+              <div class="value">${{ orden.restante }}</div>
+            </div>
+          </div>
+
+          <div class="notes">
+            <label class="field-label">Observaciones</label>
+            <div class="value prewrap">{{ orden.observaciones }}</div>
+          </div>
+        </article>
+
+        <!-- Ticket / Comprobante (derecha) -->
+        <aside class="panel ticket" aria-labelledby="ticket-title">
+          <div class="ticket-head">
+            <h2 id="ticket-title" class="panel-title">Orden - Comprobante</h2>
+            <p class="ticket-meta">Fecha: {{ orden.fecha }}</p>
+            <p class="ticket-meta">N°: {{ orden.numero_orden }}</p>
+          </div>
+
+          <div class="ticket-body">
+            <section class="ticket-section">
+              <strong>Cliente</strong>
+              <p class="small">{{ orden.nombre }} — {{ orden.rut }}</p>
+              <p class="small">{{ orden.direccion }}</p>
+            </section>
+
+            <section class="ticket-section">
+              <strong>Equipo</strong>
+              <p class="small">{{ orden.marca }} / {{ orden.modelo }}</p>
+            </section>
+
+            <section class="ticket-section">
+              <strong>Trabajo</strong>
+              <p class="small prewrap">{{ orden.falla }}</p>
+            </section>
+
+            <section class="ticket-section small-row">
+              <div>
+                <strong>Costo</strong>
+                <div class="small">${{ orden.costo }}</div>
+              </div>
+              <div>
+                <strong>Abono</strong>
+                <div class="small">${{ orden.abono }}</div>
+              </div>
+              <div>
+                <strong>Saldo</strong>
+                <div class="small">${{ orden.restante }}</div>
+              </div>
+            </section>
+
+            <section class="ticket-section">
+              <strong>Condiciones de servicio</strong>
+              <p class="small small-muted">
+                Conserve este comprobante. Consulte condiciones en taller.
+              </p>
+            </section>
+          </div>
+
+          <div class="ticket-actions">
+            <button
+              type="button"
+              class="btn btn-primary"
+              onclick="window.print()"
+            >
+              Imprimir
+            </button>
+            <a href="{% url 'orden_editar' %}" class="btn btn-outline"
+              >Volver y editar</a
+            >
+          </div>
+        </aside>
+      </section>
+
+      <!-- Footer -->
+      <footer class="panel-footer">
+        <p class="footer-text">ServiSur — Dirección · Teléfono · Condiciones</p>
+      </footer>
+    </main>
+  </body>
+</html>
