@@ -115,31 +115,6 @@ document.addEventListener("DOMContentLoaded", function () {
       nuevoModeloInput.classList.remove("is-invalid");
     }
   });
-  // ✅ Validación visual antes de enviar
-  const submitBtn = document.querySelector("button[type='submit']");
-  if (submitBtn) {
-    submitBtn.addEventListener("click", function (e) {
-      const modeloValue = modeloSelect.value;
-      const nuevoModeloValue = nuevoModeloInput.value.trim();
-      let valid = true;
-
-      if (!modeloValue || modeloValue === "") {
-        modeloSelect.classList.add("is-invalid");
-        valid = false;
-      } else {
-        modeloSelect.classList.remove("is-invalid");
-      }
-
-      if (modeloValue === "agregar_nuevo" && nuevoModeloValue === "") {
-        nuevoModeloInput.classList.add("is-invalid");
-        valid = false;
-      } else {
-        nuevoModeloInput.classList.remove("is-invalid");
-      }
-
-      if (!valid) e.preventDefault();
-    });
-  }
 
   // ✅ Agregar nueva marca (flujo completo)
   nuevaMarcaInput.addEventListener("keydown", function (event) {
