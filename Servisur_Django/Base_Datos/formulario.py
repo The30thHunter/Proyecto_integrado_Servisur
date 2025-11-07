@@ -6,12 +6,11 @@ from .models import Cliente, Pedido, Marca, Modelo, Dispositivo
 class ClienteForm(forms.ModelForm):
     class Meta:
         model = Cliente
-        fields = ['Nombre', 'Apellido', 'Numero_telefono', 'Direccion', 'Rut']
+        fields = ['Nombre', 'Apellido', 'Numero_telefono', 'Rut']
         widgets = {
             'Nombre': forms.TextInput(attrs={'class': 'form-control'}),
             'Apellido': forms.TextInput(attrs={'class': 'form-control'}),
             'Numero_telefono': forms.TextInput(attrs={'class': 'form-control'}),
-            'Direccion': forms.TextInput(attrs={'class': 'form-control'}),
             'Rut': forms.NumberInput(attrs={'class': 'form-control'}),
         }
 

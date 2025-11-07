@@ -42,7 +42,6 @@ def registrar_reparacion_view(request):
                     Nombre=request.POST.get("cliente-Nombre", "").strip(),
                     Apellido=request.POST.get("cliente-Apellido", "").strip(),
                     Numero_telefono=request.POST.get("cliente-Numero_telefono", "").strip(),
-                    Direccion=request.POST.get("cliente-Direccion", "").strip(),
                     Rut=int(request.POST.get("cliente-Rut", "0")),
                     Activo=True
                 )
