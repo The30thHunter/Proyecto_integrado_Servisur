@@ -233,4 +233,3 @@ def agregar_marca_ajax(request):
             return JsonResponse({"error": "Error interno del servidor"}, status=500)
 
     return JsonResponse({"error": "Método no permitido"}, status=405)
-
