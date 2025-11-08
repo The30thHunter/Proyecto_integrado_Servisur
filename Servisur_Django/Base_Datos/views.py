@@ -9,7 +9,7 @@ from django.http import JsonResponse
 from django.views.decorators.csrf import csrf_exempt
 
 from .models import (
-    Cliente, Pedido, Marca, Modelo, Dispositivo
+    Cliente, Pedido, Marca, Modelo, Dispositivo,Tipo_Falla
 )
 from .formulario import LoginForm, ClienteForm, DispositivoForm, PedidoForm
 
@@ -33,72 +33,81 @@ def main_view(request):
 
 
 
-def registrar_reparacion_view(request):
-    if request.method == "POST":
-        try:
-            with transaction.atomic():
-                # 🧍 Cliente
-                cliente = Cliente.objects.create(
-                    Nombre=request.POST.get("cliente-Nombre", "").strip(),
-                    Apellido=request.POST.get("cliente-Apellido", "").strip(),
-                    Numero_telefono=request.POST.get("cliente-Numero_telefono", "").strip(),
-                    Rut=int(request.POST.get("cliente-Rut", "0")),
-                    Activo=True
-                )
+def registrar_reparacion(request):
+    if request.method == 'POST':
+        # 🧍 Cliente
+        nombre = request.POST.get('cliente-Nombre')
+        apellido = request.POST.get('cliente-Apellido')
+        telefono = request.POST.get('cliente-Numero_telefono')
+        rut = request.POST.get('cliente-Rut')
 
-                # 📦 Marca y Modelo
-                marca_id = request.POST.get("dispositivo-Marca")
-                nuevo_modelo_nombre = request.POST.get("nuevo_modelo", "").strip()
-                modelo_seleccionado = request.POST.get("dispositivo-modelo")
+        cliente, _ = Cliente.objects.get_or_create(
+            Rut=rut,
+            defaults={
+                'Nombre': nombre,
+                'Apellido': apellido,
+                'Numero_telefono': telefono,
+                'Activo': True,
+            }
+        )
 
-                if marca_id == "agregar_marca":
-                    nueva_marca_nombre = request.POST.get("nueva_marca", "").strip()
-                    marca = Marca.objects.create(Marca=nueva_marca_nombre)
-                else:
-                    marca = Marca.objects.get(id=int(marca_id))
+        # 🏷️ Marca y Modelo
+        marca_id = request.POST.get('dispositivo-Marca')
+        nueva_marca = request.POST.get('nueva_marca')
+        nuevo_modelo = request.POST.get('nuevo_modelo')
 
-                if modelo_seleccionado == "agregar_nuevo" and nuevo_modelo_nombre:
-                    modelo = Modelo.objects.create(Modelo=nuevo_modelo_nombre, Marca=marca)
-                else:
-                    modelo = Modelo.objects.get(id=int(modelo_seleccionado))
+        if marca_id == 'agregar_marca' and nueva_marca:
+            marca = Marca.objects.create(Marca=nueva_marca)
+        else:
+            marca = Marca.objects.filter(id=marca_id).first()
 
-                # 💻 Dispositivo
-                dispositivo = Dispositivo.objects.create(
-                    modelo=modelo,
-                    Codigo_Bloqueo=request.POST.get("dispositivo-Codigo_Bloqueo", "").strip(),
-                    rut=cliente,
-                    Activo=True
-                )
+        modelo = None
+        if nuevo_modelo:
+            modelo, _ = Modelo.objects.get_or_create(Modelo=nuevo_modelo, Marca=marca)
+        else:
+            modelo_id = request.POST.get('dispositivo-modelo')
+            modelo = Modelo.objects.filter(id=modelo_id).first()
 
-                # 📋 Pedido
-                coste = int(request.POST.get("pedido-Coste", "0"))
-                abono = int(request.POST.get("pedido-Abono", "0"))
-                restante = coste - abono
+        # 💻 Dispositivo
+        codigo_bloqueo = request.POST.get('dispositivo-Codigo_Bloqueo')
+        dispositivo = Dispositivo.objects.create(
+            modelo=modelo,
+            rut=cliente,
+            Codigo_Bloqueo=codigo_bloqueo,
+            Activo=True
+        )
 
-                fecha_str = request.POST.get("pedido-Fecha")
-                fecha = timezone.datetime.strptime(fecha_str, "%Y-%m-%d").date() if fecha_str else timezone.localdate()
+        # ⚠️ Tipo de falla
+        falla_texto = request.POST.get('dispositivo-Tipo_Falla')
+        tipo_falla, _ = Tipo_Falla.objects.get_or_create(Falla=falla_texto)
 
-                pedido = Pedido.objects.create(
-                    Fecha=fecha,
-                    Coste=coste,
-                    Abono=abono,
-                    Restante=restante,
-                    Dispositivo=dispositivo,
-                    Estado='REG',
-                    Tipo_de_falla=request.POST.get("dispositivo-Tipo_Falla", "").strip(),
-                    Activo=True
-                )
+        # 📋 Pedido
+        fecha = request.POST.get('pedido-Fecha')
+        coste = int(request.POST.get('pedido-Coste', 0))
+        abono = int(request.POST.get('pedido-Abono', 0))
+        restante = coste - abono
 
-                messages.success(request, f"Reparación registrada correctamente (Orden: {pedido.N_Orden})")
-                return redirect("registrar_reparacion")
+        Pedido.objects.create(
+            Fecha=fecha,
+            Coste=coste,
+            Abono=abono,
+            Restante=restante,
+            Dispositivo=dispositivo,
+            Estado='REG',
+            Tipo_de_falla=tipo_falla,
+            Activo=True
+        )
 
-        except Exception as e:
-            messages.error(request, f"Ocurrió un error al guardar: {str(e)}")
+        messages.success(request, "Reparación registrada correctamente.")
+        return redirect('registrar_reparacion')
 
-    context = {
-        "dispositivo_form": DispositivoForm(),  # Solo se usa para cargar marcas en el template
-    }
-    return render(request, "base_datos/registrar_reparacion.html", context)
+    # GET: preparar marcas para el formulario
+    marcas = Marca.objects.all()
+    return render(request, 'base_datos/registrar_reparacion.html', {
+        'dispositivo_form': {'fields': {'Marca': {'queryset': marcas}}},
+    })
+
+
 
 # 📊 Vista para consultar estado de reparación
 def estado_reparacion_view(request):
