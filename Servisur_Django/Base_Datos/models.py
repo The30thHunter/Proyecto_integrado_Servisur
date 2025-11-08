@@ -70,7 +70,7 @@ class Tipo_Falla(models.Model):
     Falla = models.CharField(max_length=100, unique=True)
 
     def __str__(self):
-        return self.nombre
+        return self.Falla
 
 
 # 📋 Modelo para pedidos (órdenes de reparación)

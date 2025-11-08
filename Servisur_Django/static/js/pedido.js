@@ -282,3 +282,18 @@ document.addEventListener("DOMContentLoaded", function () {
     "tipo de reparación"
   );
 });
+
+//Agregar nuevo tipo falla
+
+document.addEventListener("DOMContentLoaded", () => {
+  const selectFalla = document.getElementById("id_dispositivo-Tipo_Falla");
+  const campoNuevaFalla = document.getElementById("campo-nueva-falla");
+
+  function toggleNuevaFalla() {
+    campoNuevaFalla.style.display =
+      selectFalla.value === "agregar_falla" ? "block" : "none";
+  }
+
+  selectFalla.addEventListener("change", toggleNuevaFalla);
+  toggleNuevaFalla(); // inicializa al cargar
+});

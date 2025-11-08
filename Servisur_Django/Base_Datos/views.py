@@ -88,6 +88,7 @@ def registrar_reparacion(request):
         # ⚠️ Tipo de falla
         falla_texto = request.POST.get('dispositivo-Tipo_Falla')
         tipo_falla, _ = Tipo_Falla.objects.get_or_create(Falla=falla_texto)
+        
 
         # 📋 Pedido
         fecha = request.POST.get('pedido-Fecha')

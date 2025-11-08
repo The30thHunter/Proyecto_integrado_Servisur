@@ -346,7 +346,6 @@ footer {
   border-top: 1px solid rgba(11, 28, 70, 0.06);
 }
 
-
 /* Contenedor ancho específico para pantallas grandes */
 .wide-container {
   max-width: 1300px; /* aumenta a 1300px; ajusta a 1400px si quieres aún más */
@@ -386,7 +385,31 @@ footer {
 
 /* Ajustes responsive: en pantallas pequeñas vuelve al comportamiento normal */
 @media (max-width: 991px) {
-  .wide-container { max-width: 100%; padding-left: .75rem; padding-right: .75rem; }
-  .wide-container table.table { min-width: 700px; }
-  .wide-container .form-control, .wide-container .form-select { padding: .4rem .5rem; }
+  .wide-container {
+    max-width: 100%;
+    padding-left: 0.75rem;
+    padding-right: 0.75rem;
+  }
+  .wide-container table.table {
+    min-width: 700px;
+  }
+  .wide-container .form-control,
+  .wide-container .form-select {
+    padding: 0.4rem 0.5rem;
+  }
+}
+
+.grid-patron {
+  display: grid;
+  grid-template-columns: repeat(3, 40px);
+  gap: 6px;
+  margin-top: 8px;
+}
+.grid-patron div {
+  background: #f8f9fa;
+  border: 1px solid #ccc;
+  text-align: center;
+  padding: 8px;
+  font-weight: bold;
+  border-radius: 4px;
 }
