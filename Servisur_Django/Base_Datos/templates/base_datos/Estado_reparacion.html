@@ -8,73 +8,66 @@
 <div class="container-fluid wide-container py-4">
 
   <div class="d-flex align-items-center justify-content-between mb-3">
-    <h3 class="mb-0 text-secondary">Estado de Reparación</h3>
-    
+    <div>
+      <h3 class="mb-0 text-secondary">Estado de Reparación</h3>
+      <small class="text-muted">Busca y actualiza el estado de las órdenes</small>
+    </div>
+    <div>
+      <!-- espacio para futuros botones -->
+    </div>
   </div>
 
-  <!-- FORMULARIO DE BÚSQUEDA (GET) -->
+  {% if messages %}
+    <div class="mb-3">
+      {% for message in messages %}
+        <div class="alert {% if message.tags %}alert-{{ message.tags }}{% else %}alert-info{% endif %}">{{ message }}</div>
+      {% endfor %}
+    </div>
+  {% endif %}
+
+  <!-- FORMULARIO DE BÚSQUEDA (envía GET) -->
   <form id="filtroForm" class="card mb-3 p-3" method="get" action="">
     <div class="row g-2">
       <div class="col-md-2">
         <label class="form-label small">Nro de orden</label>
-        <input name="orden" id="f_orden" type="text" class="form-control form-control-sm" placeholder="Ej: 123">
+        <input name="orden" id="f_orden" type="text" class="form-control form-control-sm" placeholder="Ej: 123" value="{{ filtros.orden }}">
       </div>
 
       <div class="col-md-2">
         <label class="form-label small">Nombre</label>
-        <input name="nombre" id="f_nombre" type="text" class="form-control form-control-sm" placeholder="Nombre">
+        <input name="nombre" id="f_nombre" type="text" class="form-control form-control-sm" placeholder="Nombre" value="{{ filtros.nombre }}">
       </div>
 
       <div class="col-md-2">
-        <label class="form-label small">RUT</label>
-        <input name="rut" id="f_rut" type="text" class="form-control form-control-sm" placeholder="RUT">
+        <label class="form-label small">RUT / Doc</label>
+        <input name="doc" id="f_doc" type="text" class="form-control form-control-sm" placeholder="RUT / DNI" value="{{ filtros.doc }}">
       </div>
 
       <div class="col-md-2">
         <label class="form-label small">Fecha</label>
-        <input name="fecha" id="f_fecha" type="text" class="form-control form-control-sm" placeholder="dd/mm/YYYY">
+        <input name="fecha" id="f_fecha" type="text" class="form-control form-control-sm" placeholder="dd/mm/YYYY ó YYYY-MM-DD" value="{{ filtros.fecha }}">
       </div>
 
       <div class="col-md-2">
-        <label class="form-label small">Modelo</label>
-        <input name="modelo" id="f_modelo" type="text" class="form-control form-control-sm" placeholder="Modelo">
-      </div>
-
-      <div class="col-md-2">
-        <label class="form-label small">Serie / MSI</label>
-        <input name="serie" id="f_serie" type="text" class="form-control form-control-sm" placeholder="IMEI / Serie">
-      </div>
-
-      <div class="col-md-3 mt-2">
-        <label class="form-label small">Número teléfono</label>
-        <input name="telefono" id="f_telefono" type="text" class="form-control form-control-sm" placeholder="Teléfono">
-      </div>
-
-      <div class="col-md-3 mt-2">
-        <label class="form-label small">Trabajo a realizar</label>
-        <input name="trabajo" id="f_trabajo" type="text" class="form-control form-control-sm" placeholder="Pantalla, Mojado...">
-      </div>
-
-      <div class="col-md-3 mt-2">
         <label class="form-label small">Estado</label>
         <select name="estado" id="f_estado" class="form-select form-select-sm">
           <option value="">Todos</option>
-          <option value="REG">Registrado</option>
-          <option value="PRO">En proceso</option>
-          <option value="TER">Terminado</option>
+          {% for code,label in estado_choices %}
+            <option value="{{ code }}" {% if filtros.estado == code %}selected{% endif %}>{{ label }}</option>
+          {% endfor %}
         </select>
       </div>
 
-      <div class="col-md-3 d-flex align-items-end mt-2">
-        <button type="button" id="btnFiltrar" class="btn btn-primary btn-sm me-2">Aplicar filtro (cliente)</button>
-        <button type="reset" id="btnLimpiar" class="btn btn-outline-secondary btn-sm">Limpiar</button>
+      <div class="col-md-2 d-flex align-items-end">
+        <button type="submit" class="btn btn-primary btn-sm me-2">Buscar</button>
+        <a href="{% url 'estado_reparacion' %}" class="btn btn-outline-secondary btn-sm">Limpiar</a>
       </div>
     </div>
   </form>
 
   <!-- TABLA -->
-  <div class="table-responsive">
-    <table id="tablaPedidos" class="table table-hover align-middle">
+  <div class="table-responsive card p-0">
+    <table id="tablaPedidos" class="table table-hover align-middle mb-0">
       <thead class="table-light">
         <tr>
           <th>No orden</th>
@@ -83,15 +76,15 @@
           <th>Fecha</th>
           <th>Modelo</th>
           <th>Serie / MSI</th>
-          <th>Numero de teléfono</th>
           <th>Trabajo a realizar</th>
           <th>Estado</th>
+          <th style="min-width:170px">Acción</th>
         </tr>
       </thead>
       <tbody>
         {% if pedidos %}
           {% for p in pedidos %}
-            <tr data-estado="{{ p.Estado }}">
+            <tr data-orden="{{ p.N_Orden }}" data-estado="{{ p.Estado }}">
               <td class="td-orden">{{ p.N_Orden }}</td>
 
               <td class="td-nombre">
@@ -120,26 +113,28 @@
                 {% endif %}
               </td>
 
-              <td class="td-serie">
-                {% if p.Dispositivo %}
-                  {{ p.Dispositivo.Codigo_Bloqueo }}
-                {% else %}
-                  -
-                {% endif %}
-              </td>
+              <td class="td-serie">{{ p.Dispositivo.Codigo_Bloqueo|default:"-" }}</td>
 
-              <td class="td-telefono">
-                {% if p.Dispositivo and p.Dispositivo.rut %}
-                  {{ p.Dispositivo.rut.Numero_telefono }}
-                {% else %}
-                  -
-                {% endif %}
-              </td>
-
-              <td class="td-trabajo">{{ p.Tipo_de_falla|default:"-" }}</td>
+              <td class="td-trabajo">{% if p.Tipo_de_falla %}{{ p.Tipo_de_falla.Falla }}{% else %}-{% endif %}</td>
 
               <td class="td-estado">
-                {% if p.Estado == "REG" %}Registrado{% elif p.Estado == "PRO" %}En proceso{% elif p.Estado == "TER" %}Terminado{% else %}{{ p.Estado }}{% endif %}
+                {% for code,label in estado_choices %}
+                  {% if p.Estado == code %}{{ label }}{% endif %}
+                {% endfor %}
+              </td>
+
+              <td>
+                <!-- Form para actualizar estado (POST) -->
+                <form method="post" class="d-flex align-items-center" style="gap:6px;">
+                  {% csrf_token %}
+                  <input type="hidden" name="orden_id" value="{{ p.N_Orden }}">
+                  <select name="nuevo_estado" class="form-select form-select-sm">
+                    {% for code,label in estado_choices %}
+                      <option value="{{ code }}" {% if p.Estado == code %}selected{% endif %}>{{ label }}</option>
+                    {% endfor %}
+                  </select>
+                  <button type="submit" class="btn btn-sm btn-outline-primary">Guardar</button>
+                </form>
               </td>
             </tr>
           {% endfor %}
@@ -150,82 +145,13 @@
     </table>
   </div>
 
-  <div class="mt-3 text-muted small">Nota: Los filtros se aplican en el cliente. Para filtrar en el servidor, implementa lógica en la vista que reciba los parámetros GET.</div>
-
-  
+  <div class="mt-3 text-muted small">Nota: Cambiar el estado enviará el formulario (POST) y recargará la página para reflejar el cambio.</div>
 </div>
 
-  <footer class="mt-auto text-center small text-muted">
-    <hr />
-    <p class="mb-1">
-      Sistema Servisur &copy; {{ now|date:"Y" }} — Estado de reparaciones
-    </p>
-    <p class="mb-0">Desarrollado por el equipo técnico | Versión 1.0</p>
-  </footer>
+<footer class="mt-auto text-center small text-muted">
+  <hr />
+  <p class="mb-1">Sistema Servisur &copy; {{ now|date:"Y" }} — Estado de reparaciones</p>
+  <p class="mb-0">Desarrollado por el equipo técnico | Versión 1.0</p>
+</footer>
 
-
-
-<!-- JS: filtrado en cliente -->
-<script>
-(function () {
-  const btnFiltrar = document.getElementById('btnFiltrar');
-  const btnLimpiar = document.getElementById('btnLimpiar');
-
-  function normalize(str) {
-    return (str || '').toString().toLowerCase().trim();
-  }
-
-  function aplicarFiltro() {
-    const vOrden = normalize(document.getElementById('f_orden').value);
-    const vNombre = normalize(document.getElementById('f_nombre').value);
-    const vRut = normalize(document.getElementById('f_rut').value);
-    const vFecha = normalize(document.getElementById('f_fecha').value);
-    const vModelo = normalize(document.getElementById('f_modelo').value);
-    const vSerie = normalize(document.getElementById('f_serie').value);
-    const vTelefono = normalize(document.getElementById('f_telefono').value);
-    const vTrabajo = normalize(document.getElementById('f_trabajo').value);
-    const vEstado = document.getElementById('f_estado').value;
-
-    const rows = document.querySelectorAll('#tablaPedidos tbody tr');
-    rows.forEach(row => {
-      const orden = normalize(row.querySelector('.td-orden')?.textContent);
-      const nombre = normalize(row.querySelector('.td-nombre')?.textContent);
-      const rut = normalize(row.querySelector('.td-rut')?.textContent);
-      const fecha = normalize(row.querySelector('.td-fecha')?.textContent);
-      const modelo = normalize(row.querySelector('.td-modelo')?.textContent);
-      const serie = normalize(row.querySelector('.td-serie')?.textContent);
-      const telefono = normalize(row.querySelector('.td-telefono')?.textContent);
-      const trabajo = normalize(row.querySelector('.td-trabajo')?.textContent);
-      const estadoAttr = row.getAttribute('data-estado') || '';
-
-      let show = true;
-      if (vOrden && !orden.includes(vOrden)) show = false;
-      if (vNombre && !nombre.includes(vNombre)) show = false;
-      if (vRut && !rut.includes(vRut)) show = false;
-      if (vFecha && !fecha.includes(vFecha)) show = false;
-      if (vModelo && !modelo.includes(vModelo)) show = false;
-      if (vSerie && !serie.includes(vSerie)) show = false;
-      if (vTelefono && !telefono.includes(vTelefono)) show = false;
-      if (vTrabajo && !trabajo.includes(vTrabajo)) show = false;
-      if (vEstado && vEstado !== estadoAttr) show = false;
-
-      row.style.display = show ? '' : 'none';
-    });
-  }
-
-  if (btnFiltrar) btnFiltrar.addEventListener('click', aplicarFiltro);
-  if (btnLimpiar) {
-    btnLimpiar.addEventListener('click', function () {
-      setTimeout(() => {
-        aplicarFiltro();
-      }, 10);
-    });
-  }
-
-  document.getElementById('filtroForm').addEventListener('submit', function(e){
-    e.preventDefault();
-    aplicarFiltro();
-  });
-})();
-</script>
 {% endblock %}
