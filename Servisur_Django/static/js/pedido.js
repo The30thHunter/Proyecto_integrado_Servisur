@@ -288,12 +288,131 @@ document.addEventListener("DOMContentLoaded", function () {
 document.addEventListener("DOMContentLoaded", () => {
   const selectFalla = document.getElementById("id_dispositivo-Tipo_Falla");
   const campoNuevaFalla = document.getElementById("campo-nueva-falla");
+  const inputNuevaFalla = document.getElementById("nueva_falla");
+  const form = document.querySelector("form");
 
-  function toggleNuevaFalla() {
-    campoNuevaFalla.style.display =
-      selectFalla.value === "agregar_falla" ? "block" : "none";
+  function validarFalla() {
+    const seleccion = selectFalla.value;
+    let valido = true;
+
+    // Validar selección
+    if (seleccion === "") {
+      selectFalla.classList.add("is-invalid");
+      valido = false;
+    } else {
+      selectFalla.classList.remove("is-invalid");
+      selectFalla.classList.add("is-valid");
+    }
+
+    // Validar nueva falla si corresponde
+    if (seleccion === "agregar_falla") {
+      const texto = inputNuevaFalla.value.trim();
+      if (texto.length < 3) {
+        inputNuevaFalla.classList.add("is-invalid");
+        valido = false;
+      } else {
+        inputNuevaFalla.classList.remove("is-invalid");
+        inputNuevaFalla.classList.add("is-valid");
+      }
+    }
+
+    return valido;
   }
 
-  selectFalla.addEventListener("change", toggleNuevaFalla);
-  toggleNuevaFalla(); // inicializa al cargar
+  // Mostrar u ocultar campo de nueva falla
+  selectFalla.addEventListener("change", () => {
+    const mostrar = selectFalla.value === "agregar_falla";
+    campoNuevaFalla.style.display = mostrar ? "block" : "none";
+    inputNuevaFalla.classList.remove("is-invalid", "is-valid");
+  });
+
+  // Validar al enviar
+  form.addEventListener("submit", function (e) {
+    if (!validarFalla()) {
+      e.preventDefault();
+      selectFalla.scrollIntoView({ behavior: "smooth", block: "center" });
+      selectFalla.focus();
+    }
+  });
+});
+
+// ✅ Agregar nueva falla
+const selectFalla = document.getElementById("id_dispositivo-Tipo_Falla");
+const campoNuevaFalla = document.getElementById("campo-nueva-falla");
+const inputNuevaFalla = document.getElementById("nueva_falla");
+const btnAgregarFalla = document.getElementById("btn-agregar-falla");
+
+// Mostrar u ocultar campo de nueva falla
+selectFalla.addEventListener("change", () => {
+  const mostrar = selectFalla.value === "agregar_falla";
+  campoNuevaFalla.style.display = mostrar ? "block" : "none";
+  inputNuevaFalla.classList.remove("is-invalid", "is-valid");
+});
+
+// Bloquear Enter para evitar envío prematuro
+inputNuevaFalla.addEventListener("keydown", function (e) {
+  if (e.key === "Enter") {
+    e.preventDefault();
+    document.getElementById("id_dispositivo-Codigo_Bloqueo")?.focus();
+  }
+});
+
+// Botón para confirmar nueva falla
+btnAgregarFalla?.addEventListener("click", () => {
+  const texto = inputNuevaFalla.value.trim();
+
+  if (texto.length < 3) {
+    inputNuevaFalla.classList.add("is-invalid");
+    return;
+  }
+
+  inputNuevaFalla.classList.remove("is-invalid");
+  inputNuevaFalla.classList.add("is-valid");
+
+  // Asegura que el select tenga el valor "agregar_falla"
+  selectFalla.value = "agregar_falla";
+
+  mostrarMensaje("✅ Falla preparada. Se guardará al enviar el formulario.");
+});
+
+btnAgregarFalla?.addEventListener("click", () => {
+  const texto = inputNuevaFalla.value.trim();
+
+  if (texto.length < 3) {
+    inputNuevaFalla.classList.add("is-invalid");
+    return;
+  }
+
+  fetch("/agregar_falla_ajax/", {
+    method: "POST",
+    headers: { "Content-Type": "application/x-www-form-urlencoded" },
+    body: `falla=${encodeURIComponent(texto)}`,
+  })
+    .then((res) => res.json())
+    .then((data) => {
+      if (data.error) {
+        inputNuevaFalla.classList.add("is-invalid");
+        return;
+      }
+
+      // Selecciona la nueva falla en el select
+      const nuevaOpcion = document.createElement("option");
+      nuevaOpcion.value = data.id;
+      nuevaOpcion.textContent = data.nombre;
+
+      const agregarOpcion = selectFalla.querySelector(
+        'option[value="agregar_falla"]'
+      );
+      selectFalla.insertBefore(nuevaOpcion, agregarOpcion);
+      nuevaOpcion.selected = true;
+
+      inputNuevaFalla.classList.remove("is-invalid");
+      inputNuevaFalla.classList.add("is-valid");
+      campoNuevaFalla.style.display = "none";
+
+      mostrarMensaje("✅ Falla agregada correctamente.");
+    })
+    .catch(() => {
+      inputNuevaFalla.classList.add("is-invalid");
+    });
 });

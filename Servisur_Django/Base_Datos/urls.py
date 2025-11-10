@@ -22,4 +22,5 @@ urlpatterns = [
     #  Creación dinámica
     path('agregar_modelo_ajax/', views.agregar_modelo_ajax, name='agregar_modelo_ajax'),
     path('agregar_marca_ajax/', views.agregar_marca_ajax, name='agregar_marca_ajax'),
+    path("agregar_falla_ajax/", views.agregar_falla_ajax, name="agregar_falla_ajax"),
 ]

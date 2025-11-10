@@ -141,3 +141,25 @@ class LoginForm(forms.Form):
         label='Contraseña',
         widget=forms.PasswordInput(attrs={'class': 'form-control', 'placeholder': 'Contraseña'})
     )
+
+
+
+from django import forms
+from .models import Dispositivo, Tipo_Falla
+
+class DispositivoForm(forms.ModelForm):
+    Tipo_Falla = forms.ModelChoiceField(
+        queryset=Tipo_Falla.objects.all(),
+        required=False,
+        label="Tipo de falla"
+    )
+
+    class Meta:
+        model = Dispositivo
+        fields = [
+            "modelo",
+            "rut",
+            "Metodo_Bloqueo",
+            "Codigo_Bloqueo",
+            "Tipo_Falla",  # ✅ asegúrate de incluirlo aquí
+        ]

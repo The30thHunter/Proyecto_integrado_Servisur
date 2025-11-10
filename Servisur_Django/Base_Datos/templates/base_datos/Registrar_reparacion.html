@@ -224,13 +224,22 @@
           <!-- Campo oculto para nueva falla -->
           <div class="mb-2" id="campo-nueva-falla" style="display: none">
             <label for="nueva_falla">Nueva falla</label>
-            <input
-              type="text"
-              id="nueva_falla"
-              name="nueva_falla"
-              class="form-control"
-              placeholder="Describe la nueva falla"
-            />
+            <div class="input-group">
+              <input
+                type="text"
+                id="nueva_falla"
+                name="nueva_falla"
+                class="form-control"
+                placeholder="Describe la nueva falla"
+              />
+              <button
+                type="button"
+                id="btn-agregar-falla"
+                class="btn btn-outline-primary"
+              >
+                Agregar
+              </button>
+            </div>
           </div>
 
           <!-- 📝 Observaciones -->

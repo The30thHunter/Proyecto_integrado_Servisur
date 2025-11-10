@@ -320,3 +320,24 @@ def agregar_marca_ajax(request):
             return JsonResponse({"error": "Error interno del servidor"}, status=500)
 
     return JsonResponse({"error": "Método no permitido"}, status=405)
+
+
+from django.http import JsonResponse
+from .models import Tipo_Falla
+
+@csrf_exempt
+# ✅ Agregar nueva falla (AJAX)
+def agregar_falla_ajax(request):
+    if request.method == "POST":
+        texto = request.POST.get("falla", "").strip()
+        if len(texto) < 3:
+            return JsonResponse({"error": "La falla debe tener al menos 3 caracteres."})
+
+        tipo_falla, creado = Tipo_Falla.objects.get_or_create(Falla=texto)
+        return JsonResponse({
+            "id": tipo_falla.id,
+            "nombre": tipo_falla.Falla,
+            "nuevo": creado
+        })
+
+    return JsonResponse({"error": "Método no permitido."}, status=405)
