@@ -268,9 +268,13 @@ def obtener_modelos_por_marca(request):
     return JsonResponse(list(modelos), safe=False)
 
 # 🔄 Obtener tipos de falla (AJAX)
+from django.http import JsonResponse
+from .models import Tipo_Falla
+
 def obtener_tipos_falla(request):
-    tipos = Pedido.objects.all().values('id', 'Tipo_de_falla')
-    return JsonResponse(list(tipos), safe=False)
+    tipos = list(Tipo_Falla.objects.all().order_by("Falla").values("id", "Falla"))
+    return JsonResponse(tipos, safe=False)
+
 
 # ➕ Agregar nuevo modelo (AJAX)
 from .models import Modelo, Marca

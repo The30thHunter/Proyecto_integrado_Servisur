@@ -17,7 +17,7 @@ urlpatterns = [
     path('generar-excel/', views.generar_excel_view, name='generar_excel'),
     #  Carga dinámica
     path('obtener_modelos_por_marca/', views.obtener_modelos_por_marca, name='obtener_modelos_por_marca'),
-    path('obtener_tipos_falla/', views.obtener_tipos_falla, name='obtener_tipos_falla'),
+    path("obtener_tipos_falla/", views.obtener_tipos_falla, name="obtener_tipos_falla"),
 
     #  Creación dinámica
     path('agregar_modelo_ajax/', views.agregar_modelo_ajax, name='agregar_modelo_ajax'),

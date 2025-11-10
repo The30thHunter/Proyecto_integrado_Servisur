@@ -161,5 +161,5 @@ class DispositivoForm(forms.ModelForm):
             "rut",
             "Metodo_Bloqueo",
             "Codigo_Bloqueo",
-            "Tipo_Falla",  # ✅ asegúrate de incluirlo aquí
+            "Tipo_Falla",  
         ]

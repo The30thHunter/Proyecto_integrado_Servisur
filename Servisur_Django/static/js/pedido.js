@@ -349,33 +349,8 @@ selectFalla.addEventListener("change", () => {
   inputNuevaFalla.classList.remove("is-invalid", "is-valid");
 });
 
-// Bloquear Enter para evitar envío prematuro
-inputNuevaFalla.addEventListener("keydown", function (e) {
-  if (e.key === "Enter") {
-    e.preventDefault();
-    document.getElementById("id_dispositivo-Codigo_Bloqueo")?.focus();
-  }
-});
-
-// Botón para confirmar nueva falla
-btnAgregarFalla?.addEventListener("click", () => {
-  const texto = inputNuevaFalla.value.trim();
-
-  if (texto.length < 3) {
-    inputNuevaFalla.classList.add("is-invalid");
-    return;
-  }
-
-  inputNuevaFalla.classList.remove("is-invalid");
-  inputNuevaFalla.classList.add("is-valid");
-
-  // Asegura que el select tenga el valor "agregar_falla"
-  selectFalla.value = "agregar_falla";
-
-  mostrarMensaje("✅ Falla preparada. Se guardará al enviar el formulario.");
-});
-
-btnAgregarFalla?.addEventListener("click", () => {
+// Función reutilizable para agregar falla
+function agregarFalla() {
   const texto = inputNuevaFalla.value.trim();
 
   if (texto.length < 3) {
@@ -395,7 +370,6 @@ btnAgregarFalla?.addEventListener("click", () => {
         return;
       }
 
-      // Selecciona la nueva falla en el select
       const nuevaOpcion = document.createElement("option");
       nuevaOpcion.value = data.id;
       nuevaOpcion.textContent = data.nombre;
@@ -415,4 +389,50 @@ btnAgregarFalla?.addEventListener("click", () => {
     .catch(() => {
       inputNuevaFalla.classList.add("is-invalid");
     });
+}
+
+// ⌨️ Enter en el input
+inputNuevaFalla.addEventListener("keydown", function (e) {
+  if (e.key === "Enter") {
+    e.preventDefault();
+    agregarFalla();
+  }
+});
+
+// 🖱️ Botón “Agregar”
+btnAgregarFalla?.addEventListener("click", agregarFalla);
+
+function poblarSelectFallas(selectedId) {
+  fetch("/obtener_tipos_falla/")
+    .then((res) => res.json())
+    .then((tipos) => {
+      const select = document.getElementById("id_dispositivo-Tipo_Falla");
+      if (!select) return;
+      // conserva el primer placeholder si existe
+      const placeholder = select.querySelector('option[value=""]')
+        ? select.querySelector('option[value=""]').outerHTML
+        : '<option value="" disabled>Seleccione una falla</option>';
+      select.innerHTML = placeholder;
+
+      tipos.forEach((t) => {
+        const opt = document.createElement("option");
+        opt.value = t.id;
+        opt.textContent = t.Falla;
+        if (selectedId && String(selectedId) === String(t.id))
+          opt.selected = true;
+        select.appendChild(opt);
+      });
+
+      // opción para agregar nueva falla (siempre al final)
+      const optExtra = document.createElement("option");
+      optExtra.value = "agregar_falla";
+      optExtra.textContent = "➕ Agregar nueva falla";
+      select.appendChild(optExtra);
+    })
+    .catch((err) => console.error("Error cargando tipos de falla:", err));
+}
+
+// carga inicial al abrir la página
+document.addEventListener("DOMContentLoaded", () => {
+  poblarSelectFallas();
 });
