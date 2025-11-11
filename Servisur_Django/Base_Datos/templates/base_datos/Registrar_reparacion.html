@@ -92,10 +92,15 @@
               </select>
             </div>
 
-            <div id="nuevo-bloque-marca" class="mb-2" style="display:none;">
+            <div id="nuevo-bloque-marca" class="mb-2" style="display: none;">
               <label for="nueva_marca">Nueva marca</label>
-              <input type="text" id="nueva_marca" name="nueva_marca" class="form-control" />
+              <div class="input-group">
+                <input type="text" id="nueva_marca" name="nueva_marca" class="form-control" placeholder="Ej: Samsung, Huawei..." />
+                <button type="button" id="btn-agregar-marca" class="btn btn-outline-primary">Agregar</button>
+              </div>
             </div>
+
+
 
             <!-- Modelo (se carga por AJAX) -->
             <div class="mb-2">
@@ -109,6 +114,8 @@
               <label for="nuevo_modelo">Nuevo modelo</label>
               <input type="text" id="nuevo_modelo" name="nuevo_modelo" class="form-control" />
             </div>
+
+
 
             <!-- Método bloqueo y código -->
             <div class="mb-2">
