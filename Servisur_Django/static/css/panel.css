@@ -560,3 +560,10 @@ footer {
 .historial-page footer {
   margin-top: 18px;
 }
+
+.patron-preview img {
+  max-width: 180px;
+  height: auto;
+  border: 1px solid #ccc;
+  border-radius: 6px;
+}

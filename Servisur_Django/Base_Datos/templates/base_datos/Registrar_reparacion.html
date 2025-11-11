@@ -24,37 +24,54 @@
         <div class="col-12">
           <div class="card mb-3 p-3">
             <h6 class="mb-3">Datos del cliente</h6>
-
-            {% if cliente_form %}
-              {{ cliente_form.non_field_errors }}
-              {% for field in cliente_form %}
-                <div class="mb-2">
-                  <label for="{{ field.auto_id }}">{{ field.label }}</label>
-                  {{ field }}
-                  {% if field.help_text %}<div class="form-text small">{{ field.help_text }}</div>{% endif %}
-                  {% if field.errors %}<div class="text-danger small mt-1">{{ field.errors|striptags }}</div>{% endif %}
-                </div>
-              {% endfor %}
-            {% else %}
-              <div class="mb-3">
-                <label for="id_cliente-Rut">RUT</label>
-                <input type="text" id="id_cliente-Rut" name="cliente-Rut" class="form-control" placeholder="Ej: 12.345.678-9" required />
+        
+            <!-- Botones para elegir tipo de identificación -->
+            <div class="mb-3">
+              <label class="form-label d-block mb-2">Tipo de identificación</label>
+              <div class="btn-group" role="group" aria-label="Tipo de identificación">
+                <input type="radio" class="btn-check" name="tipo_identificacion" id="btn-rut" value="rut" autocomplete="off"
+                  required>
+                <label class="btn btn-outline-primary" for="btn-rut">RUT</label>
+        
+                <input type="radio" class="btn-check" name="tipo_identificacion" id="btn-pasaporte" value="pasaporte"
+                  autocomplete="off" required>
+                <label class="btn btn-outline-primary" for="btn-pasaporte">Pasaporte / DNI</label>
               </div>
-              <div class="mb-3">
-                <label for="id_cliente-Nombre">Nombre</label>
-                <input type="text" id="id_cliente-Nombre" name="cliente-Nombre" class="form-control" required />
-              </div>
-              <div class="mb-3">
-                <label for="id_cliente-Apellido">Apellido</label>
-                <input type="text" id="id_cliente-Apellido" name="cliente-Apellido" class="form-control" required />
-              </div>
-              <div class="mb-3">
-                <label for="id_cliente-Numero_telefono">Teléfono</label>
-                <input type="tel" id="id_cliente-Numero_telefono" name="cliente-Numero_telefono" class="form-control" />
-              </div>
-            {% endif %}
+            </div>
+        
+            <!-- Campo RUT -->
+            <div id="campo-rut" class="mb-3" style="display: none;">
+              <label for="id_cliente-Rut">RUT</label>
+              <input type="text" id="id_cliente-Rut" name="cliente-Rut" class="form-control" placeholder="Ej: 12.345.678-9" />
+            </div>
+        
+            <!-- Campo Pasaporte / DNI -->
+            <div id="campo-pasaporte" class="mb-3" style="display: none;">
+              <label for="id_cliente-Pasaporte">Pasaporte / DNI</label>
+              <input type="text" id="id_cliente-Pasaporte" name="cliente-Pasaporte" class="form-control"
+                placeholder="Ej: ABC123456" />
+            </div>
+        
+            <!-- Nombre -->
+            <div class="mb-3">
+              <label for="id_cliente-Nombre">Nombre</label>
+              <input type="text" id="id_cliente-Nombre" name="cliente-Nombre" class="form-control" required />
+            </div>
+        
+            <!-- Apellido -->
+            <div class="mb-3">
+              <label for="id_cliente-Apellido">Apellido</label>
+              <input type="text" id="id_cliente-Apellido" name="cliente-Apellido" class="form-control" required />
+            </div>
+        
+            <!-- Teléfono -->
+            <div class="mb-3">
+              <label for="id_cliente-Numero_telefono">Teléfono</label>
+              <input type="tel" id="id_cliente-Numero_telefono" name="cliente-Numero_telefono" class="form-control" />
+            </div>
           </div>
         </div>
+
 
         <!-- Datos del equipo -->
         <div class="col-12">
@@ -97,10 +114,16 @@
             <div class="mb-2">
               <label for="id_dispositivo-Metodo_Bloqueo">Método de bloqueo</label>
               <select id="id_dispositivo-Metodo_Bloqueo" name="dispositivo-Metodo_Bloqueo" class="form-select" required>
+                <option value="" disabled selected>Seleccione método de bloqueo</option>
                 <option value="PIN">PIN</option>
                 <option value="PASS">Contraseña</option>
                 <option value="PATRON">Patrón (matriz 3x3)</option>
               </select>
+
+              <div id="imagen-patron" class="mb-2" style="display: none; margin-top: 8px;">
+                <img src="{% static 'img/patron_3x3.png' %}" alt="Patrón 3x3" style="max-width: 200px; height: auto;" />
+              </div>
+
             </div>
 
             <div class="mb-2">
@@ -111,14 +134,13 @@
             <!-- Tipo de falla: select + opción agregar -->
             <div class="mb-2">
               <label for="id_dispositivo-Tipo_Falla">Tipo de falla</label>
-              <select id="id_dispositivo-Tipo_Falla" name="dispositivo-Tipo_Falla" class="form-select">
+              <select id="id_dispositivo-Tipo_Falla" name="dispositivo-Tipo_Falla" class="form-select" required>  
                 <option value="">Seleccione una falla</option>
                 {% if dispositivo_form and dispositivo_form.fields.Tipo_Falla.queryset %}
                   {% for falla in dispositivo_form.fields.Tipo_Falla.queryset %}
                     <option value="{{ falla.Falla }}">{{ falla.Falla }}</option>
                   {% endfor %}
                 {% endif %}
-                <option value="agregar_falla">➕ Agregar nueva falla</option>
               </select>
             </div>
 

@@ -1,5 +1,5 @@
+// ✅ Cálculo automático del campo Restante
 document.addEventListener("DOMContentLoaded", function () {
-  // 🧮 Cálculo automático del campo Restante
   const costeInput = document.getElementById("id_pedido-Coste");
   const abonoInput = document.getElementById("id_pedido-Abono");
   const restanteInput = document.getElementById("id_pedido-Restante");
@@ -16,33 +16,30 @@ document.addEventListener("DOMContentLoaded", function () {
     abonoInput.addEventListener("input", calcularRestante);
   }
 
-  // 📦 Elementos del formulario
+  // 🔄 Carga dinámica de modelos según marca
   const marcaSelect = document.getElementById("marca-select");
   const modeloSelect = document.getElementById("modelo-select");
-  const nuevoModeloWrapper = document.getElementById("nuevo-modelo-input");
   const nuevoModeloInput = document.getElementById("nuevo_modelo");
-  const nuevoBloque = document.getElementById("nuevo-bloque-marca-modelo");
+  const nuevoModeloWrapper = document.getElementById("nuevo-modelo-input");
   const nuevaMarcaInput = document.getElementById("nueva_marca");
+  const nuevoBloqueMarca = document.getElementById("nuevo-bloque-marca");
 
   modeloSelect.disabled = true;
 
-  // 📦 Carga dinámica de modelos según marca
   marcaSelect.addEventListener("change", function () {
     const marcaId = this.value;
     modeloSelect.innerHTML = "";
     nuevoModeloWrapper.style.display = "none";
     nuevoModeloInput.value = "";
-    nuevoModeloInput.classList.remove("is-invalid");
 
     if (marcaId === "agregar_marca") {
-      nuevoBloque.style.display = "block";
+      nuevoBloqueMarca.style.display = "block";
       nuevaMarcaInput.required = true;
       return;
     } else {
-      nuevoBloque.style.display = "none";
+      nuevoBloqueMarca.style.display = "none";
       nuevaMarcaInput.required = false;
       nuevaMarcaInput.value = "";
-      nuevaMarcaInput.classList.remove("is-invalid");
     }
 
     if (!marcaId || isNaN(marcaId)) {
@@ -58,51 +55,31 @@ document.addEventListener("DOMContentLoaded", function () {
     modeloSelect.disabled = true;
 
     fetch(`/obtener_modelos_por_marca?marca_id=${marcaId}`)
-      .then((response) => {
-        if (!response.ok) throw new Error("Respuesta no válida del servidor");
-        return response.json();
-      })
+      .then((res) => res.json())
       .then((data) => {
-        modeloSelect.innerHTML = "";
+        modeloSelect.innerHTML = '<option value="">Seleccione modelo</option>';
+        data.forEach((modelo) => {
+          const opt = document.createElement("option");
+          opt.value = modelo.id;
+          opt.textContent = modelo.Modelo;
+          modeloSelect.appendChild(opt);
+        });
 
-        const defaultOption = document.createElement("option");
-        defaultOption.textContent = "Seleccione modelo";
-        defaultOption.value = "";
-        modeloSelect.appendChild(defaultOption);
-
-        if (data.length === 0) {
-          const noModelOption = document.createElement("option");
-          noModelOption.textContent = "No hay modelos disponibles";
-          noModelOption.disabled = true;
-          modeloSelect.appendChild(noModelOption);
-        } else {
-          data.forEach((modelo) => {
-            const option = document.createElement("option");
-            option.value = modelo.id;
-            option.textContent = modelo.Modelo;
-            modeloSelect.appendChild(option);
-          });
-        }
-
-        const addOption = document.createElement("option");
-        addOption.textContent = "➕ Agregar nuevo modelo";
-        addOption.value = "agregar_nuevo";
-        modeloSelect.appendChild(addOption);
+        const optExtra = document.createElement("option");
+        optExtra.value = "agregar_nuevo";
+        optExtra.textContent = "➕ Agregar nuevo modelo";
+        modeloSelect.appendChild(optExtra);
 
         modeloSelect.disabled = false;
       })
-      .catch((error) => {
-        console.error("❌ Error al cargar modelos:", error);
-        modeloSelect.innerHTML = "";
-        const errorOption = document.createElement("option");
-        errorOption.textContent = "Error al cargar modelos";
-        errorOption.disabled = true;
-        modeloSelect.appendChild(errorOption);
+      .catch((err) => {
+        console.error("Error al cargar modelos:", err);
+        modeloSelect.innerHTML =
+          "<option disabled>Error al cargar modelos</option>";
         modeloSelect.disabled = true;
       });
   });
 
-  // ✏️ Mostrar campo de nuevo modelo
   modeloSelect.addEventListener("change", function () {
     if (this.value === "agregar_nuevo") {
       nuevoModeloWrapper.style.display = "block";
@@ -112,19 +89,15 @@ document.addEventListener("DOMContentLoaded", function () {
       nuevoModeloWrapper.style.display = "none";
       nuevoModeloInput.required = false;
       nuevoModeloInput.value = "";
-      nuevoModeloInput.classList.remove("is-invalid");
     }
   });
 
-  // ✅ Agregar nueva marca (flujo completo)
-  nuevaMarcaInput.addEventListener("keydown", function (event) {
-    if (event.key === "Enter") {
-      event.preventDefault();
-
-      const nombreMarca = nuevaMarcaInput.value.trim();
-      console.log("Valor ingresado en nueva_marca:", nombreMarca);
-
-      if (!nombreMarca) {
+  // ✅ Agregar nueva marca y activar campo de nuevo modelo
+  nuevaMarcaInput.addEventListener("keydown", function (e) {
+    if (e.key === "Enter") {
+      e.preventDefault();
+      const nombre = nuevaMarcaInput.value.trim();
+      if (!nombre) {
         nuevaMarcaInput.classList.add("is-invalid");
         return;
       }
@@ -132,12 +105,11 @@ document.addEventListener("DOMContentLoaded", function () {
       fetch("/agregar_marca_ajax/", {
         method: "POST",
         headers: { "Content-Type": "application/x-www-form-urlencoded" },
-        body: `nombre=${encodeURIComponent(nombreMarca)}`,
+        body: `nombre=${encodeURIComponent(nombre)}`,
       })
         .then((res) => res.json())
         .then((data) => {
           if (data.error) {
-            console.error("Error:", data.error);
             nuevaMarcaInput.classList.add("is-invalid");
             return;
           }
@@ -154,9 +126,11 @@ document.addEventListener("DOMContentLoaded", function () {
 
           nuevaMarcaInput.value = "";
           nuevaMarcaInput.classList.remove("is-invalid");
-          nuevoBloque.style.display = "none";
+          nuevoBloqueMarca.style.display = "none";
 
           marcaSelect.dispatchEvent(new Event("change"));
+
+          // ✅ Seleccionar automáticamente “Agregar nuevo modelo”
           setTimeout(() => {
             const agregarNuevo = modeloSelect.querySelector(
               'option[value="agregar_nuevo"]'
@@ -167,31 +141,24 @@ document.addEventListener("DOMContentLoaded", function () {
               nuevoModeloInput.focus();
             }
           }, 300);
-
-          mostrarMensaje("✅ Marca agregada correctamente");
         })
-        .catch((err) => {
-          console.error("Error al agregar marca:", err);
-          nuevaMarcaInput.classList.add("is-invalid");
-        });
+        .catch(() => nuevaMarcaInput.classList.add("is-invalid"));
     }
   });
 
-  // ✅ Agregar nuevo modelo para marca existente
-  nuevoModeloInput.addEventListener("keydown", function (event) {
+  // ✅ Agregar nuevo modelo
+  nuevoModeloInput.addEventListener("keydown", function (e) {
     if (
-      event.key === "Enter" &&
+      e.key === "Enter" &&
       marcaSelect.value &&
-      marcaSelect.value !== "agregar_marca" &&
-      nuevoBloque.style.display === "none"
+      marcaSelect.value !== "agregar_marca"
     ) {
-      event.preventDefault();
-
-      const modeloNombre = this.value.trim();
+      e.preventDefault();
+      const nombre = nuevoModeloInput.value.trim();
       const marcaId = marcaSelect.value;
 
-      if (!modeloNombre || !marcaId) {
-        this.classList.add("is-invalid");
+      if (!nombre) {
+        nuevoModeloInput.classList.add("is-invalid");
         return;
       }
 
@@ -199,14 +166,13 @@ document.addEventListener("DOMContentLoaded", function () {
         method: "POST",
         headers: { "Content-Type": "application/x-www-form-urlencoded" },
         body: `nombre=${encodeURIComponent(
-          modeloNombre
+          nombre
         )}&marca_id=${encodeURIComponent(marcaId)}`,
       })
         .then((res) => res.json())
         .then((data) => {
           if (data.error) {
-            console.error("Error:", data.error);
-            this.classList.add("is-invalid");
+            nuevoModeloInput.classList.add("is-invalid");
             return;
           }
 
@@ -214,145 +180,67 @@ document.addEventListener("DOMContentLoaded", function () {
           nuevaOpcion.value = data.id;
           nuevaOpcion.textContent = data.nombre;
 
-          const agregarNuevo = modeloSelect.querySelector(
+          const agregarOpcion = modeloSelect.querySelector(
             'option[value="agregar_nuevo"]'
           );
-          modeloSelect.insertBefore(nuevaOpcion, agregarNuevo);
+          modeloSelect.insertBefore(nuevaOpcion, agregarOpcion);
           nuevaOpcion.selected = true;
 
-          this.value = "";
-          this.classList.remove("is-invalid");
-          document.getElementById("nuevo-modelo-input").style.display = "none";
-          modeloSelect.dispatchEvent(new Event("change"));
-
-          mostrarMensaje("✅ Modelo agregado correctamente");
+          nuevoModeloInput.value = "";
+          nuevoModeloInput.classList.remove("is-invalid");
+          nuevoModeloWrapper.style.display = "none";
         })
-        .catch((err) => {
-          console.error("Error al agregar modelo:", err);
-          this.classList.add("is-invalid");
-        });
-    }
-  });
-
-  // ✅ Mensaje sutil de éxito
-  function mostrarMensaje(texto) {
-    const mensaje = document.createElement("div");
-    mensaje.textContent = texto;
-    mensaje.className = "text-success small mt-1 fade-in";
-    mensaje.style.transition = "opacity 0.5s ease";
-    mensaje.style.opacity = "0";
-
-    const destino =
-      document.querySelector("#modelo-select")?.parentElement || document.body;
-    destino.appendChild(mensaje);
-
-    setTimeout(() => (mensaje.style.opacity = "1"), 50);
-    setTimeout(() => {
-      mensaje.style.opacity = "0";
-      setTimeout(() => mensaje.remove(), 500);
-    }, 2500);
-  }
-
-  // 🔄 Carga de tipos de falla y reparación
-  function cargarOpciones(endpoint, selectId, label) {
-    const select = document.getElementById(selectId);
-    if (!select) return;
-
-    fetch(endpoint)
-      .then((res) => res.json())
-      .then((data) => {
-        select.innerHTML = `<option value="">Seleccione ${label}</option>`;
-        data.forEach((item) => {
-          const option = document.createElement("option");
-          option.value = item.id;
-          option.textContent = item.nombre;
-          select.appendChild(option);
-        });
-      })
-      .catch((err) => {
-        console.error(`Error al cargar ${label}:`, err);
-        select.innerHTML = `<option disabled>Error al cargar ${label}</option>`;
-      });
-  }
-
-  cargarOpciones("/obtener_tipos_falla", "tipo-falla-select", "tipo de falla");
-  cargarOpciones(
-    "/obtener_tipos_reparacion",
-    "tipo-reparacion-select",
-    "tipo de reparación"
-  );
-});
-
-//Agregar nuevo tipo falla
-
-document.addEventListener("DOMContentLoaded", () => {
-  const selectFalla = document.getElementById("id_dispositivo-Tipo_Falla");
-  const campoNuevaFalla = document.getElementById("campo-nueva-falla");
-  const inputNuevaFalla = document.getElementById("nueva_falla");
-  const form = document.querySelector("form");
-
-  function validarFalla() {
-    const seleccion = selectFalla.value;
-    let valido = true;
-
-    // Validar selección
-    if (seleccion === "") {
-      selectFalla.classList.add("is-invalid");
-      valido = false;
-    } else {
-      selectFalla.classList.remove("is-invalid");
-      selectFalla.classList.add("is-valid");
-    }
-
-    // Validar nueva falla si corresponde
-    if (seleccion === "agregar_falla") {
-      const texto = inputNuevaFalla.value.trim();
-      if (texto.length < 3) {
-        inputNuevaFalla.classList.add("is-invalid");
-        valido = false;
-      } else {
-        inputNuevaFalla.classList.remove("is-invalid");
-        inputNuevaFalla.classList.add("is-valid");
-      }
-    }
-
-    return valido;
-  }
-
-  // Mostrar u ocultar campo de nueva falla
-  selectFalla.addEventListener("change", () => {
-    const mostrar = selectFalla.value === "agregar_falla";
-    campoNuevaFalla.style.display = mostrar ? "block" : "none";
-    inputNuevaFalla.classList.remove("is-invalid", "is-valid");
-  });
-
-  // Validar al enviar
-  form.addEventListener("submit", function (e) {
-    if (!validarFalla()) {
-      e.preventDefault();
-      selectFalla.scrollIntoView({ behavior: "smooth", block: "center" });
-      selectFalla.focus();
+        .catch(() => nuevoModeloInput.classList.add("is-invalid"));
     }
   });
 });
 
-// ✅ Agregar nueva falla
+// ✅ Mostrar/ocultar campo de nueva falla
 const selectFalla = document.getElementById("id_dispositivo-Tipo_Falla");
 const campoNuevaFalla = document.getElementById("campo-nueva-falla");
 const inputNuevaFalla = document.getElementById("nueva_falla");
 const btnAgregarFalla = document.getElementById("btn-agregar-falla");
 
-// Mostrar u ocultar campo de nueva falla
-selectFalla.addEventListener("change", () => {
+selectFalla?.addEventListener("change", () => {
   const mostrar = selectFalla.value === "agregar_falla";
   campoNuevaFalla.style.display = mostrar ? "block" : "none";
   inputNuevaFalla.classList.remove("is-invalid", "is-valid");
 });
 
-// Función reutilizable para agregar falla
+// ✅ Validar selección antes de enviar el formulario
+document.querySelector("form")?.addEventListener("submit", function (e) {
+  const seleccion = selectFalla.value;
+  let valido = true;
+
+  if (seleccion === "") {
+    selectFalla.classList.add("is-invalid");
+    valido = false;
+  } else {
+    selectFalla.classList.remove("is-invalid");
+    selectFalla.classList.add("is-valid");
+  }
+
+  if (seleccion === "agregar_falla") {
+    const texto = inputNuevaFalla.value.trim();
+    if (texto.length < 3) {
+      inputNuevaFalla.classList.add("is-invalid");
+      valido = false;
+    } else {
+      inputNuevaFalla.classList.remove("is-invalid");
+      inputNuevaFalla.classList.add("is-valid");
+    }
+  }
+
+  if (!valido) {
+    e.preventDefault();
+    selectFalla.scrollIntoView({ behavior: "smooth", block: "center" });
+    selectFalla.focus();
+  }
+});
+
+// ✅ Función para agregar nueva falla vía AJAX
 function agregarFalla() {
   const texto = inputNuevaFalla.value.trim();
-
   if (texto.length < 3) {
     inputNuevaFalla.classList.add("is-invalid");
     return;
@@ -371,8 +259,8 @@ function agregarFalla() {
       }
 
       const nuevaOpcion = document.createElement("option");
-      nuevaOpcion.value = data.id;
-      nuevaOpcion.textContent = data.nombre;
+      nuevaOpcion.value = data.Falla || data.nombre || data.id;
+      nuevaOpcion.textContent = data.Falla || data.nombre;
 
       const agregarOpcion = selectFalla.querySelector(
         'option[value="agregar_falla"]'
@@ -383,6 +271,7 @@ function agregarFalla() {
       inputNuevaFalla.classList.remove("is-invalid");
       inputNuevaFalla.classList.add("is-valid");
       campoNuevaFalla.style.display = "none";
+      inputNuevaFalla.value = "";
 
       mostrarMensaje("✅ Falla agregada correctamente.");
     })
@@ -391,28 +280,24 @@ function agregarFalla() {
     });
 }
 
-// ⌨️ Enter en el input
-inputNuevaFalla.addEventListener("keydown", function (e) {
+// ✅ Agregar falla con Enter o botón
+btnAgregarFalla?.addEventListener("click", agregarFalla);
+inputNuevaFalla?.addEventListener("keydown", (e) => {
   if (e.key === "Enter") {
     e.preventDefault();
     agregarFalla();
   }
 });
 
-// 🖱️ Botón “Agregar”
-btnAgregarFalla?.addEventListener("click", agregarFalla);
-
-function poblarSelectFallas(selectedId) {
+// ✅ Cargar todas las fallas desde el backend
+function poblarSelectFallas(selectedId = null) {
   fetch("/obtener_tipos_falla/")
     .then((res) => res.json())
     .then((tipos) => {
       const select = document.getElementById("id_dispositivo-Tipo_Falla");
       if (!select) return;
-      // conserva el primer placeholder si existe
-      const placeholder = select.querySelector('option[value=""]')
-        ? select.querySelector('option[value=""]').outerHTML
-        : '<option value="" disabled>Seleccione una falla</option>';
-      select.innerHTML = placeholder;
+
+      const placeholder = '<option value="" disabled>Seleccione una falla</option>';
 
       tipos.forEach((t) => {
         const opt = document.createElement("option");
@@ -423,7 +308,6 @@ function poblarSelectFallas(selectedId) {
         select.appendChild(opt);
       });
 
-      // opción para agregar nueva falla (siempre al final)
       const optExtra = document.createElement("option");
       optExtra.value = "agregar_falla";
       optExtra.textContent = "➕ Agregar nueva falla";
@@ -432,48 +316,52 @@ function poblarSelectFallas(selectedId) {
     .catch((err) => console.error("Error cargando tipos de falla:", err));
 }
 
-// carga inicial al abrir la página
+// ✅ Carga inicial al abrir la página
 document.addEventListener("DOMContentLoaded", () => {
   poblarSelectFallas();
 });
 
+// ✅ Mensaje sutil de éxito
+function mostrarMensaje(texto) {
+  const mensaje = document.createElement("div");
+  mensaje.textContent = texto;
+  mensaje.className = "text-success small mt-1 fade-in";
+  mensaje.style.transition = "opacity 0.5s ease";
+  mensaje.style.opacity = "0";
 
-(function(){
-  const marcaSelect = document.getElementById('marca-select');
-  const modeloSelect = document.getElementById('modelo-select');
-  const modeloActual = modeloSelect ? modeloSelect.getAttribute('data-current') : null;
+  const destino = campoNuevaFalla || document.body;
+  destino.appendChild(mensaje);
 
-  function cargarModelos(marcaId, seleccionadoId){
-    if (!marcaId) {
-      modeloSelect.innerHTML = '<option value="">Seleccione modelo</option>';
-      return;
-    }
-    fetch(`/ajax/modelos/?marca_id=${marcaId}`)
-      .then(r => r.json())
-      .then(list => {
-        modeloSelect.innerHTML = '<option value="">Seleccione modelo</option>';
-        list.forEach(it => {
-          const opt = document.createElement('option');
-          opt.value = it.id;
-          opt.textContent = it.Modelo || it.nombre || it.model;
-          if (seleccionadoId && String(seleccionadoId) === String(it.id)) opt.selected = true;
-          modeloSelect.appendChild(opt);
-        });
-      }).catch(console.error);
+  setTimeout(() => (mensaje.style.opacity = "1"), 50);
+  setTimeout(() => {
+    mensaje.style.opacity = "0";
+    setTimeout(() => mensaje.remove(), 500);
+  }, 2500);
+}
+
+document.addEventListener("DOMContentLoaded", () => {
+  const metodoSelect = document.getElementById("id_dispositivo-Metodo_Bloqueo");
+  const imagenPatron = document.getElementById("imagen-patron");
+
+  metodoSelect?.addEventListener("change", () => {
+    const valor = metodoSelect.value;
+    imagenPatron.style.display = valor === "PATRON" ? "block" : "none";
+  });
+});
+
+
+document.addEventListener("DOMContentLoaded", () => {
+  const btnRut = document.getElementById("btn-rut");
+  const btnPasaporte = document.getElementById("btn-pasaporte");
+  const campoRut = document.getElementById("campo-rut");
+  const campoPasaporte = document.getElementById("campo-pasaporte");
+
+  function actualizarCampos() {
+    campoRut.style.display = btnRut.checked ? "block" : "none";
+    campoPasaporte.style.display = btnPasaporte.checked ? "block" : "none";
   }
 
-  // cargar al inicio si estamos en edición y hay modelo actual
-  const current = modeloActual;
-  if (current && marcaSelect.value) cargarModelos(marcaSelect.value, current);
+  btnRut?.addEventListener("change", actualizarCampos);
+  btnPasaporte?.addEventListener("change", actualizarCampos);
+});
 
-  marcaSelect && marcaSelect.addEventListener('change', function(){
-    const val = this.value;
-    if (val === 'agregar_marca') {
-      document.getElementById('nuevo-bloque-marca').style.display = 'block';
-      return;
-    } else {
-      document.getElementById('nuevo-bloque-marca').style.display = 'none';
-    }
-    cargarModelos(val, null);
-  });
-})();
