@@ -413,3 +413,150 @@ footer {
   font-weight: bold;
   border-radius: 4px;
 }
+
+
+
+
+/* Paleta suave — ajusta si quieres otro tono */
+:root{
+  --accent-1: #5b7a90;    /* color principal suave (azul grisáceo) */
+  --accent-2: #f4f7f9;    /* fondo de tabla / celdas */
+  --accent-3: #8aa0b3;    /* color secundario (bordes / hover) */
+  --muted-text: #5a6b74;   /* texto no tan negro */
+  --btn-primary-bg: #4b6a80; /* botones primarios */
+  --btn-primary-hover: #405a6d;
+  --btn-outline-bg: transparent;
+  --btn-outline-border: #7d98ab;
+  --row-alt: #f8fbfc;
+}
+
+/* Tabla: fondo suave, texto menos contrastado, filas alternas ligeras */
+.table {
+  color: var(--muted-text);
+  background-color: transparent;
+}
+
+.table thead th {
+  background-color: var(--accent-2);
+  color: var(--accent-1);
+  border-bottom: 1px solid rgba(0,0,0,0.06);
+  font-weight: 600;
+}
+
+.table tbody tr {
+  background-color: transparent;
+}
+
+.table tbody tr:nth-child(even) td {
+  background-color: var(--row-alt);
+}
+
+.table td, .table th {
+  vertical-align: middle;
+  border-top: 1px solid rgba(0,0,0,0.04);
+}
+
+/* Hover suave en filas */
+.table tbody tr:hover {
+  background: linear-gradient(90deg, rgba(75,106,128,0.04), rgba(75,106,128,0.02));
+}
+
+/* Bordes redondeados en la caja de la tabla */
+.table-responsive {
+  border-radius: 8px;
+  overflow: auto;
+  background-color: #ffffff; /* o transparent si prefieres */
+  box-shadow: 0 1px 0 rgba(19,32,38,0.02);
+  padding: 8px;
+}
+
+/* Botones: primario sólido y outline suavizado */
+.btn-primary {
+  background-color: var(--btn-primary-bg);
+  border-color: transparent;
+  color: #fff;
+  box-shadow: none;
+  transition: background-color .12s ease, transform .06s ease;
+}
+
+.btn-primary:hover, .btn-primary:focus {
+  background-color: var(--btn-primary-hover);
+  transform: translateY(-1px);
+  color: #fff;
+}
+
+/* Outline buttons estilo acorde */
+.btn-outline-secondary {
+  background: var(--btn-outline-bg);
+  color: var(--accent-1);
+  border: 1px solid var(--btn-outline-border);
+}
+
+.btn-outline-secondary:hover {
+  background: rgba(75,106,128,0.06);
+  color: var(--accent-1);
+}
+
+/* Tamaños y separación para tablas llenas de datos */
+.table-sm td, .table-sm th {
+  padding: .45rem .6rem;
+}
+
+/* Estado de acciones (pequeños iconos/botones) */
+.btn-sm {
+  padding: .28rem .5rem;
+  font-size: .82rem;
+}
+
+/* Inputs y cards (cohesión visual con la paleta) */
+.card, .card p, .card .form-control {
+  background-color: #fff;
+  color: var(--muted-text);
+}
+
+/* Input focus suave */
+.form-control:focus {
+  box-shadow: 0 0 0 0.12rem rgba(75,106,128,0.12);
+  border-color: var(--accent-1);
+}
+
+
+/* Estilos solo para la vista Historial de Reparaciones */
+.historial-page {
+  background: linear-gradient(180deg, #f7fbfd 0%, #f1f6f9 55%, #edf4f7 100%);
+  background-attachment: fixed;
+  padding-top: 28px;
+  padding-bottom: 28px;
+  min-height: 100vh;
+}
+
+/* Panel central ligeramente destacado */
+.historial-page .historial-panel {
+  background: linear-gradient(180deg, rgba(255,255,255,0.92), rgba(255,255,255,0.98));
+  border-radius: 12px;
+  box-shadow: 0 8px 24px rgba(30,50,60,0.04);
+  padding: 18px;
+}
+
+/* Ajustes de la tabla dentro del historial (cohesión con paleta) */
+.historial-page .table-responsive {
+  background-color: transparent;
+  padding: 6px;
+  border-radius: 8px;
+}
+
+/* Encabezado más suave */
+.historial-page .table thead th {
+  background-color: #f4f7f9;
+  color: var(--accent-1, #5b7a90);
+}
+
+/* Mantener inputs y cards legibles dentro del panel */
+.historial-page .card, .historial-page .form-control {
+  background-color: #fff;
+}
+
+/* Opcional: pequeño margen en el footer cuando se usa historial-page */
+.historial-page footer {
+  margin-top: 18px;
+}

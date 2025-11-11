@@ -1,6 +1,6 @@
 from django import forms
 from django.utils.translation import gettext_lazy as _
-from .models import Cliente, Pedido, Marca, Modelo, Dispositivo
+from .models import Cliente, Pedido, Marca, Modelo, Dispositivo, Tipo_Falla
 
 # 🧍 Formulario para registrar un cliente nuevo
 class ClienteForm(forms.ModelForm):
@@ -16,11 +16,16 @@ class ClienteForm(forms.ModelForm):
 
     def clean_Rut(self):
         rut = self.cleaned_data.get('Rut')
-        if rut and Cliente.objects.filter(Rut=rut).exists():
+        instancia = getattr(self, 'instance', None)
+        qs = Cliente.objects.filter(Rut=rut)
+        if instancia and instancia.pk:
+            qs = qs.exclude(pk=instancia.pk)
+        if rut and qs.exists():
             raise forms.ValidationError("Ya existe un cliente con este RUT.")
         return rut
 
-# 📋 Formulario para registrar un pedido (orden de reparación)
+
+"""# 📋 Formulario para registrar un pedido (orden de reparación)
 class PedidoForm(forms.ModelForm):
     Cliente = forms.ModelChoiceField(
         queryset=Cliente.objects.filter(Activo=True),
@@ -41,7 +46,21 @@ class PedidoForm(forms.ModelForm):
             'Coste': forms.NumberInput(attrs={'class': 'form-control', 'id': 'id_pedido-Coste'}),
             'Abono': forms.NumberInput(attrs={'class': 'form-control', 'id': 'id_pedido-Abono'}),
             'Restante': forms.NumberInput(attrs={'class': 'form-control', 'id': 'id_pedido-Restante'}),
+        }"""
+        
+        
+class PedidoForm(forms.ModelForm):
+    class Meta:
+        model = Pedido
+        fields = ['Fecha', 'Coste', 'Abono', 'Restante']  # quitar Cliente y Dispositivo
+        widgets = {
+            'Fecha': forms.DateInput(attrs={'type': 'date', 'class': 'form-control', 'id': 'id_pedido-Fecha'}),
+            'Coste': forms.NumberInput(attrs={'class': 'form-control', 'id': 'id_pedido-Coste'}),
+            'Abono': forms.NumberInput(attrs={'class': 'form-control', 'id': 'id_pedido-Abono'}),
+            'Restante': forms.NumberInput(attrs={'class': 'form-control', 'id': 'id_pedido-Restante', 'readonly': True}),
         }
+
+        
 
 # 🏷️ Formulario para registrar una nueva marca
 class MarcaForm(forms.ModelForm):
@@ -97,13 +116,11 @@ class DispositivoForm(forms.ModelForm):
         required=False,
         widget=forms.Select(attrs={'class': 'form-select', 'id': 'modelo-select'})
     )
-
-    Tipo_de_falla = forms.CharField(
-        required=True,
-        widget=forms.TextInput(attrs={
-            'class': 'form-control',
-            'placeholder': 'Ingrese la falla aqui'
-        })
+    
+    Tipo_Falla = forms.ModelChoiceField(
+        queryset=Tipo_Falla.objects.all(),
+        required=False,
+        label="Tipo de falla"
     )
 
     Codigo_Bloqueo = forms.CharField(
@@ -116,19 +133,55 @@ class DispositivoForm(forms.ModelForm):
 
     class Meta:
         model = Dispositivo
-        fields = ['Marca', 'modelo', 'Tipo_de_falla', 'Codigo_Bloqueo']
+        fields = [
+            "modelo",
+            #"rut",
+            "Metodo_Bloqueo",
+            "Codigo_Bloqueo",
+            "Tipo_Falla",  
+        ]
+
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
 
-        if 'Marca' in self.data:
+    # Por defecto no hay modelos
+        self.fields['modelo'].queryset = Modelo.objects.none()
+
+    # detectar prefijo si existe
+        marca_field_name = 'Marca'
+        modelo_field_name = 'modelo'
+        pref = getattr(self, 'prefix', None)
+        if pref:
+            marca_field_name = f'{pref}-Marca'
+            modelo_field_name = f'{pref}-modelo'
+
+    # 1) Si viene con datos (POST/GET), usar la marca enviada para poblar modelos
+        if marca_field_name in self.data:
             try:
-                marca_id = int(self.data.get('Marca'))
-                self.fields['modelo'].queryset = Modelo.objects.filter(Marca_id=marca_id)
+                raw = self.data.get(marca_field_name)
+                marca_id = int(raw) if raw not in ('', None) else None
+                if marca_id:
+                    self.fields['modelo'].queryset = Modelo.objects.filter(Marca_id=marca_id)
             except (ValueError, TypeError):
                 self.fields['modelo'].queryset = Modelo.objects.none()
-        elif self.instance.pk and self.instance.Marca:
-            self.fields['modelo'].queryset = Modelo.objects.filter(Marca=self.instance.Marca)
+        else:
+        # 2) Edición: si la instancia Dispositivo tiene modelo, usar su Marca para poblar modelos
+            instancia = getattr(self, 'instance', None)
+            if getattr(instancia, 'pk', None) and getattr(instancia, 'modelo', None):
+                marca_obj = getattr(instancia.modelo, 'Marca', None)
+                if marca_obj:
+                    self.fields['modelo'].queryset = Modelo.objects.filter(Marca=marca_obj)
+                    try:
+                        self.fields['Marca'].initial = marca_obj.id
+                    except Exception:
+                        pass
+                    try:
+                        self.fields['modelo'].initial = instancia.modelo.id
+                    except Exception:
+                        pass
+
+
 
 # 🔐 Formulario de login para autenticación de usuarios
 class LoginForm(forms.Form):
@@ -141,25 +194,3 @@ class LoginForm(forms.Form):
         label='Contraseña',
         widget=forms.PasswordInput(attrs={'class': 'form-control', 'placeholder': 'Contraseña'})
     )
-
-
-
-from django import forms
-from .models import Dispositivo, Tipo_Falla
-
-class DispositivoForm(forms.ModelForm):
-    Tipo_Falla = forms.ModelChoiceField(
-        queryset=Tipo_Falla.objects.all(),
-        required=False,
-        label="Tipo de falla"
-    )
-
-    class Meta:
-        model = Dispositivo
-        fields = [
-            "modelo",
-            "rut",
-            "Metodo_Bloqueo",
-            "Codigo_Bloqueo",
-            "Tipo_Falla",  
-        ]

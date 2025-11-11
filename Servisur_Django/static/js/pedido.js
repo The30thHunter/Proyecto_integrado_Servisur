@@ -436,3 +436,44 @@ function poblarSelectFallas(selectedId) {
 document.addEventListener("DOMContentLoaded", () => {
   poblarSelectFallas();
 });
+
+
+(function(){
+  const marcaSelect = document.getElementById('marca-select');
+  const modeloSelect = document.getElementById('modelo-select');
+  const modeloActual = modeloSelect ? modeloSelect.getAttribute('data-current') : null;
+
+  function cargarModelos(marcaId, seleccionadoId){
+    if (!marcaId) {
+      modeloSelect.innerHTML = '<option value="">Seleccione modelo</option>';
+      return;
+    }
+    fetch(`/ajax/modelos/?marca_id=${marcaId}`)
+      .then(r => r.json())
+      .then(list => {
+        modeloSelect.innerHTML = '<option value="">Seleccione modelo</option>';
+        list.forEach(it => {
+          const opt = document.createElement('option');
+          opt.value = it.id;
+          opt.textContent = it.Modelo || it.nombre || it.model;
+          if (seleccionadoId && String(seleccionadoId) === String(it.id)) opt.selected = true;
+          modeloSelect.appendChild(opt);
+        });
+      }).catch(console.error);
+  }
+
+  // cargar al inicio si estamos en edición y hay modelo actual
+  const current = modeloActual;
+  if (current && marcaSelect.value) cargarModelos(marcaSelect.value, current);
+
+  marcaSelect && marcaSelect.addEventListener('change', function(){
+    const val = this.value;
+    if (val === 'agregar_marca') {
+      document.getElementById('nuevo-bloque-marca').style.display = 'block';
+      return;
+    } else {
+      document.getElementById('nuevo-bloque-marca').style.display = 'none';
+    }
+    cargarModelos(val, null);
+  });
+})();

@@ -23,4 +23,12 @@ urlpatterns = [
     path('agregar_modelo_ajax/', views.agregar_modelo_ajax, name='agregar_modelo_ajax'),
     path('agregar_marca_ajax/', views.agregar_marca_ajax, name='agregar_marca_ajax'),
     path("agregar_falla_ajax/", views.agregar_falla_ajax, name="agregar_falla_ajax"),
+    
+    path('reparacion/<int:orden_id>/editar/', views.editar_reparacion_view, name='editar_reparacion'),
+    path('reparacion/<int:orden_id>/json/', views.pedido_json_view, name='pedido_json'),
+    path('reparacion/<int:orden_id>/actualizar/', views.pedido_actualizar_view, name='pedido_actualizar'),
+    # alias para AJAX que usan scripts antiguos o externos
+    path('ajax/modelos/', views.obtener_modelos_por_marca, name='ajax_modelos'),
+    path('ajax/tipos_falla/', views.obtener_tipos_falla, name='ajax_tipos_falla'),
+
 ]

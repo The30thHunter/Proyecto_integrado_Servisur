@@ -1,79 +1,66 @@
 {% extends "base_datos/base.html" %}
-<!-- 🔧 Envolvemos todo en un contenedor flexible -->
 {% load static %}
-<!-- 🔧 Envolvemos todo en un contenedor flexible -->
 {% block title %}Historial de Reparaciones - Servisur{% endblock %}
-<!-- 🔧 Envolvemos todo en un contenedor flexible -->
+
 {% block content %}
 <link rel="stylesheet" href="{% static 'css/panel.css' %}" />
 
-<!-- 🔧 Envolvemos todo en un contenedor flexible -->
-<div class="d-flex flex-column min-vh-100">
-  <div class="container py-4">
+<div class="d-flex flex-column min-vh-100 historial-page">
+  <div class="container-fluid py-4 historial-panel">
     <h3 class="mb-3 text-secondary">📋 Historial de Reparaciones</h3>
 
     {% if messages %}
-    <div class="mb-3">
-      {% for message in messages %}
-      <div
-        class="alert {% if message.tags %}alert-{{ message.tags }}{% else %}alert-info{% endif %}"
-      >
-        {{ message }}
+      <div class="mb-3">
+        {% for message in messages %}
+          <div class="alert {% if message.tags %}alert-{{ message.tags }}{% else %}alert-info{% endif %}">{{ message }}</div>
+        {% endfor %}
       </div>
-      {% endfor %}
-    </div>
     {% endif %}
 
-    <form method="get">
+    <form method="get" class="mb-3">
       <div class="row gx-3">
-        <!-- 🔍 Buscar por RUT -->
-        <div class="col-lg-4">
+        <div class="col-lg-3">
           <div class="card mb-3 p-3">
             <label for="rut" class="form-label">Buscar por RUT</label>
-            <input
-              type="text"
-              name="rut"
-              id="rut"
-              class="form-control"
-              placeholder="Ej: 12345678"
-            />
+            <input type="text" name="rut" id="rut" class="form-control" placeholder="Ej: 12345678" value="{{ request.GET.rut|default:'' }}">
           </div>
         </div>
 
-        <!-- 🔍 Buscar por N° Orden -->
-        <div class="col-lg-4">
+        <div class="col-lg-3">
           <div class="card mb-3 p-3">
-            <label for="orden" class="form-label">Buscar por N° Orden</label>
-            <input
-              type="text"
-              name="orden"
-              id="orden"
-              class="form-control"
-              placeholder="Ej: 0001"
-            />
+            <label for="nombre" class="form-label">Buscar por Nombre</label>
+            <input type="text" name="nombre" id="nombre" class="form-control" placeholder="Ej: Kevin" value="{{ request.GET.nombre|default:'' }}">
           </div>
         </div>
 
-        <!-- 📅 Buscar por Fecha -->
-        <div class="col-lg-4">
+        <div class="col-lg-2">
           <div class="card mb-3 p-3">
-            <label for="fecha" class="form-label">Buscar por Fecha</label>
-            <input type="date" name="fecha" id="fecha" class="form-control" />
+            <label for="orden" class="form-label">N° Orden</label>
+            <input type="text" name="orden" id="orden" class="form-control" placeholder="Ej: 0001" value="{{ request.GET.orden|default:'' }}">
           </div>
         </div>
-      </div>
 
-      <div class="d-flex justify-content-end">
-        <button type="submit" class="btn btn-primary">Buscar</button>
+        <div class="col-lg-2">
+          <div class="card mb-3 p-3">
+            <label for="fecha" class="form-label">Fecha</label>
+            <input type="date" name="fecha" id="fecha" class="form-control" value="{{ request.GET.fecha|default:'' }}">
+          </div>
+        </div>
+
+        <div class="col-lg-2 d-flex align-items-end">
+          <div>
+            <button type="submit" class="btn btn-primary">Buscar</button>
+            <a href="{% url 'consultar_historial' %}" class="btn btn-outline-secondary ms-2">Limpiar</a>
+          </div>
+        </div>
       </div>
     </form>
 
     <hr class="my-4" />
 
-    <!-- 📊 Resultados -->
-    <div class="card p-3 animate-fade-in">
+    <div class="card p-2">
       <h6 class="mb-3">Resultados</h6>
-      <div class="table-responsive">
+      <div class="table-responsive" style="max-width:100vw; overflow-x:auto;">
         <table class="table table-bordered table-sm">
           <thead class="table-light">
             <tr>
@@ -84,43 +71,206 @@
               <th>RUT</th>
               <th>Marca</th>
               <th>Equipo</th>
+              <th>Serie</th>
+              <th>Trabajo</th>
+              <th>Coste</th>
+              <th>Abono</th>
+              <th>Restante</th>
+              <th>Observaciones</th>
               <th>Estado</th>
+              <th>Acción</th>
             </tr>
           </thead>
           <tbody>
             {% for rep in reparaciones %}
-            <tr>
-              <td>{{ rep.nombre }}</td>
-              <td>{{ rep.apellido }}</td>
-              <td>{{ rep.numero_orden }}</td>
-              <td>{{ rep.fecha_ingreso|date:"d/m/Y" }}</td>
-              <td>{{ rep.rut }}</td>
-              <td>{{ rep.marca }}</td>
-              <td>{{ rep.equipo }}</td>
-              <td>{{ rep.estado }}</td>
-            </tr>
+              <tr>
+                <td>{{ rep.nombre }}</td>
+                <td>{{ rep.apellido }}</td>
+                <td>{{ rep.numero_orden }}</td>
+                <td>{{ rep.fecha_ingreso|date:"d/m/Y" }}</td>
+                <td>{{ rep.rut }}</td>
+                <td>{{ rep.marca }}</td>
+                <td>{{ rep.equipo }}</td>
+                <td>{{ rep.serie }}</td>
+                <td>{{ rep.tipo_falla }}</td>
+                <td>${{ rep.coste }}</td>
+                <td>${{ rep.abono }}</td>
+                <td>${{ rep.restante }}</td>
+                <td>{{ rep.observaciones }}</td>
+                <td>{{ rep.estado }}</td>
+                <td>
+                  <button type="button" class="btn btn-sm btn-outline-primary btn-open-edit" data-id="{{ rep.orden_id }}">
+                    Editar
+                  </button>
+                </td>
+              </tr>
             {% empty %}
-            <tr>
-              <td colspan="8" class="text-muted text-center">
-                No hay reparaciones registradas.
-              </td>
-            </tr>
+              <tr>
+                <td colspan="15" class="text-muted text-center">No hay reparaciones registradas.</td>
+              </tr>
             {% endfor %}
           </tbody>
         </table>
       </div>
     </div>
+
   </div>
 
-  <!-- 📌 Footer fijo al fondo -->
   <footer class="mt-auto text-center small text-muted">
     <hr />
-    <p class="mb-1">
-      Sistema Servisur &copy; {{ now|date:"Y" }} — Historial de Reparaciones
-    </p>
+    <p class="mb-1">Sistema Servisur &copy; {{ now|date:"Y" }} — Historial de Reparaciones</p>
     <p class="mb-0">Desarrollado por el equipo técnico | Versión 1.0</p>
   </footer>
 </div>
 
-<script src="{% static 'js/historial.js' %}"></script>
+<!-- Modal de edición reutilizable -->
+<div class="modal fade" id="modalEditarPedido" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-lg modal-dialog-centered">
+    <div class="modal-content">
+      <form id="form-editar-pedido">
+        {% csrf_token %}
+        <div class="modal-header">
+          <h5 class="modal-title">Editar orden</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+        </div>
+        <div class="modal-body">
+          <div id="modal-body-content">Cargando...</div>
+        </div>
+        <div class="modal-footer">
+          <button type="submit" class="btn btn-primary">Guardar</button>
+          <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancelar</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function(){
+  function getCsrfToken() {
+    const el = document.querySelector('[name=csrfmiddlewaretoken]');
+    return el ? el.value : '';
+  }
+
+  if (typeof bootstrap === 'undefined') {
+    console.error('Bootstrap JS no cargado: modal no funcionará');
+    return;
+  }
+
+  const modalEl = document.getElementById('modalEditarPedido');
+  const modal = new bootstrap.Modal(modalEl);
+  const modalBody = document.getElementById('modal-body-content');
+
+  document.body.addEventListener('click', async function(e){
+    const btn = e.target.closest('.btn-open-edit');
+    if (!btn) return;
+    const ordenId = btn.dataset.id;
+    if (!ordenId) return alert('Falta id de orden');
+
+    modalBody.innerHTML = 'Cargando...';
+    modal.show();
+
+    try {
+      const res = await fetch(`/reparacion/${ordenId}/json/`);
+      if (!res.ok) throw new Error('Error al obtener datos: ' + res.status);
+      const data = await res.json();
+
+      const esc = s => String(s||'').replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;');
+
+      modalBody.innerHTML = `
+        <input type="hidden" name="orden_id" value="${esc(data.pedido.N_Orden)}">
+        <div class="row">
+          <div class="col-md-6 mb-2"><label class="form-label small">Nombre</label><input name="cliente-Nombre" class="form-control" value="${esc(data.cliente.Nombre)}"></div>
+          <div class="col-md-6 mb-2"><label class="form-label small">Apellido</label><input name="cliente-Apellido" class="form-control" value="${esc(data.cliente.Apellido)}"></div>
+          <div class="col-md-6 mb-2"><label class="form-label small">RUT</label><input name="cliente-Rut" class="form-control" value="${esc(data.cliente.Rut)}"></div>
+          <div class="col-md-6 mb-2"><label class="form-label small">Teléfono</label><input name="cliente-Numero_telefono" class="form-control" value="${esc(data.cliente.Numero_telefono)}"></div>
+
+          <div class="col-md-6 mb-2">
+            <label class="form-label small">Marca</label>
+            <select name="dispositivo-Marca" id="modal-marca" class="form-select">
+              <option value="">Seleccione marca</option>
+              ${data.marcas.map(m=>`<option value="${m.id}" ${m.id==data.dispositivo.Marca_id?'selected':''}>${esc(m.Marca)}</option>`).join('')}
+              <option value="agregar_marca">➕ Agregar nueva marca</option>
+            </select>
+          </div>
+
+          <div class="col-md-6 mb-2">
+            <label class="form-label small">Modelo</label>
+            <select name="dispositivo-modelo" id="modal-modelo" class="form-select">
+              <option value="">Seleccione modelo</option>
+              ${data.modelos_de_marca.map(m=>`<option value="${m.id}" ${m.id==data.dispositivo.Modelo_id?'selected':''}>${esc(m.Modelo)}</option>`).join('')}
+            </select>
+          </div>
+
+          <div class="col-md-6 mb-2">
+            <label class="form-label small">Método bloqueo</label>
+            <select name="dispositivo-Metodo_Bloqueo" class="form-select">
+              <option value="PIN" ${data.dispositivo.Metodo_Bloqueo==='PIN'?'selected':''}>PIN</option>
+              <option value="PASS" ${data.dispositivo.Metodo_Bloqueo==='PASS'?'selected':''}>Contraseña</option>
+              <option value="PATRON" ${data.dispositivo.Metodo_Bloqueo==='PATRON'?'selected':''}>Patrón</option>
+            </select>
+          </div>
+
+          <div class="col-md-6 mb-2"><label class="form-label small">Código bloqueo</label><input name="dispositivo-Codigo_Bloqueo" class="form-control" value="${esc(data.dispositivo.Codigo_Bloqueo)}"></div>
+
+          <div class="col-md-6 mb-2"><label class="form-label small">Tipo de falla</label><input name="dispositivo-Tipo_Falla" class="form-control" value="${esc(data.pedido.Tipo_de_falla)}"></div>
+
+          <div class="col-md-6 mb-2"><label class="form-label small">Fecha</label><input type="date" name="pedido-Fecha" class="form-control" value="${data.pedido.Fecha ? data.pedido.Fecha.split('T')[0] : ''}"></div>
+
+          <div class="col-md-4 mb-2"><label class="form-label small">Coste</label><input type="number" name="pedido-Coste" class="form-control" value="${esc(data.pedido.Coste)}"></div>
+          <div class="col-md-4 mb-2"><label class="form-label small">Abono</label><input type="number" name="pedido-Abono" class="form-control" value="${esc(data.pedido.Abono)}"></div>
+          <div class="col-md-4 mb-2"><label class="form-label small">Observaciones</label><input name="pedido-Observaciones" class="form-control" value="${esc(data.pedido.Observaciones)}"></div>
+        </div>
+      `;
+
+      const modalMarca = document.getElementById('modal-marca');
+      const modalModelo = document.getElementById('modal-modelo');
+      if (modalMarca) {
+        modalMarca.addEventListener('change', async function(){
+          const mid = this.value;
+          if (!mid || mid === 'agregar_marca') { modalModelo.innerHTML = '<option value="">Seleccione modelo</option>'; return; }
+          try {
+            const r = await fetch(`/obtener_modelos_por_marca/?marca_id=${mid}`);
+            const list = await r.json();
+            modalModelo.innerHTML = '<option value="">Seleccione modelo</option>';
+            list.forEach(it=>{
+              const opt = document.createElement('option'); opt.value = it.id; opt.textContent = it.Modelo; modalModelo.appendChild(opt);
+            });
+          } catch(e){ console.error(e); }
+        });
+      }
+
+    } catch(err){
+      modalBody.innerHTML = '<div class="text-danger">Error al cargar la orden</div>';
+      console.error(err);
+    }
+  });
+
+  document.getElementById('form-editar-pedido').addEventListener('submit', async function(e){
+    e.preventDefault();
+    const form = e.target;
+    const formData = new FormData(form);
+    const ordenId = formData.get('orden_id');
+    try {
+      const res = await fetch(`/reparacion/${ordenId}/actualizar/`, {
+        method: 'POST',
+        headers: {'X-CSRFToken': getCsrfToken()},
+        body: formData
+      });
+      const data = await res.json();
+      if (res.ok && data.ok) {
+        modal.hide();
+        location.reload();
+      } else {
+        alert(data.error || data.message || 'Error al guardar');
+      }
+    } catch(err){
+      console.error(err);
+      alert('Error de red al guardar la orden.');
+    }
+  });
+
+});
+</script>
+
 {% endblock %}

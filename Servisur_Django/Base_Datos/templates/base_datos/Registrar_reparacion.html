@@ -1,8 +1,7 @@
 {% extends "base_datos/base.html" %}
-<!-- 🧍 Datos del cliente -->
 {% load static %}
-<!-- 🧍 Datos del cliente -->
-{% block title%}RegistrarReparación - Servisur{% endblock %} {% block content %}
+{% block title %}Registrar Reparación - Servisur{% endblock %}
+{% block content %}
 <link rel="stylesheet" href="{% static 'css/panel.css' %}" />
 
 <div class="d-flex flex-column min-vh-100">
@@ -10,300 +9,167 @@
     <h3 class="mb-3 text-secondary">Registrar Reparación</h3>
 
     {% if messages %}
-    <div class="mb-3">
-      {% for message in messages %}
-      <div
-        class="alert {% if message.tags %}alert-{{ message.tags }}{% else %}alert-info{% endif %}"
-      >
-        {{ message }}
+      <div class="mb-3">
+        {% for message in messages %}
+          <div class="alert {% if message.tags %}alert-{{ message.tags }}{% else %}alert-info{% endif %}">{{ message }}</div>
+        {% endfor %}
       </div>
-      {% endfor %}
-    </div>
     {% endif %}
 
     <form method="post" novalidate>
       {% csrf_token %}
 
       <div class="row gx-3">
-        <!-- 🧍 Datos del cliente -->
+        <!-- Datos del cliente (usar cliente_form si existe, sino inputs fallback) -->
         <div class="col-12">
-          <div class="card mb-3 p-3 animate-slide-up">
-            <h6 class="mb-3">🧍 Datos del cliente</h6>
+          <div class="card mb-3 p-3">
+            <h6 class="mb-3">Datos del cliente</h6>
 
-            <!-- 🔘 Selector de origen -->
-            <div class="mb-3 d-flex gap-2">
-              <button
-                type="button"
-                id="btn-rut"
-                class="btn btn-outline-primary btn-sm"
-              >
-                RUT
-              </button>
-              <button
-                type="button"
-                id="btn-extranjero"
-                class="btn btn-outline-secondary btn-sm"
-              >
-                Extranjero
-              </button>
-            </div>
-
-            <!-- 🆔 Campo de identificación -->
-            <div class="mb-3">
-              <label for="id_cliente-Rut" id="label-identificacion">RUT</label>
-              <input
-                type="text"
-                id="id_cliente-Rut"
-                name="cliente-Rut"
-                class="form-control"
-                placeholder="Ej: 12.345.678-9"
-                required
-              />
-              <div class="form-text" id="ayuda-identificacion">
-                Ingresa el RUT chileno con formato válido.
-              </div>
-              <div class="invalid-feedback" id="error-identificacion">
-                Ingresa un documento válido.
-              </div>
-            </div>
-
-            <!-- 👤 Nombre -->
-            <div class="mb-3">
-              <label for="id_cliente-Nombre">Nombre</label>
-              <input
-                type="text"
-                id="id_cliente-Nombre"
-                name="cliente-Nombre"
-                class="form-control"
-                required
-              />
-            </div>
-
-            <!-- 👤 Apellido -->
-            <div class="mb-3">
-              <label for="id_cliente-Apellido">Apellido</label>
-              <input
-                type="text"
-                id="id_cliente-Apellido"
-                name="cliente-Apellido"
-                class="form-control"
-                required
-              />
-            </div>
-
-            <!-- 📞 Teléfono -->
-            <div class="mb-3">
-              <label for="id_cliente-Numero_telefono">Teléfono</label>
-              <input
-                type="tel"
-                id="id_cliente-Numero_telefono"
-                name="cliente-Numero_telefono"
-                class="form-control"
-                required
-              />
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <!-- 💻 Datos del equipo -->
-      <div class="col-12">
-        <div class="card mb-3 p-3 animate-slide-up">
-          <h6 class="mb-3">Datos del equipo</h6>
-
-          <!--MARCA -->
-          <div class="mb-2">
-            <label for="marca-select">Marca</label>
-            <select
-              id="marca-select"
-              name="dispositivo-Marca"
-              class="form-select"
-              required
-            >
-              <option value="">Seleccione marca</option>
-              {% for marca in dispositivo_form.fields.Marca.queryset %}
-              <option value="{{ marca.id }}">{{ marca.Marca }}</option>
+            {% if cliente_form %}
+              {{ cliente_form.non_field_errors }}
+              {% for field in cliente_form %}
+                <div class="mb-2">
+                  <label for="{{ field.auto_id }}">{{ field.label }}</label>
+                  {{ field }}
+                  {% if field.help_text %}<div class="form-text small">{{ field.help_text }}</div>{% endif %}
+                  {% if field.errors %}<div class="text-danger small mt-1">{{ field.errors|striptags }}</div>{% endif %}
+                </div>
               {% endfor %}
-              <option value="agregar_marca">➕ Agregar nueva marca</option>
-            </select>
-          </div>
-
-          <div
-            id="nuevo-bloque-marca-modelo"
-            class="mb-2"
-            style="display: none"
-          >
-            <label for="nueva_marca">Nueva marca</label>
-            <input
-              type="text"
-              id="nueva_marca"
-              name="nueva_marca"
-              class="form-control"
-            />
-          </div>
-
-          <!-- Modelo -->
-          <div class="mb-2">
-            <label for="modelo-select">Modelo</label>
-            <select
-              id="modelo-select"
-              name="dispositivo-modelo"
-              class="form-select"
-            >
-              <option value="">Seleccione modelo</option>
-            </select>
-          </div>
-
-          <div id="nuevo-modelo-input" class="mb-2" style="display: none">
-            <label for="nuevo_modelo">Nuevo modelo</label>
-            <input
-              type="text"
-              id="nuevo_modelo"
-              name="nuevo_modelo"
-              class="form-control"
-            />
-          </div>
-
-          <!-- 🔐 Método de bloqueo -->
-          <div class="mb-2">
-            <label for="id_dispositivo-Metodo_Bloqueo">Método de bloqueo</label>
-            <select
-              id="id_dispositivo-Metodo_Bloqueo"
-              name="dispositivo-Metodo_Bloqueo"
-              class="form-select"
-              required
-            >
-              <option value="PIN">PIN</option>
-              <option value="PASS">Contraseña</option>
-              <option value="PATRON">Patrón (matriz 3x3)</option>
-            </select>
-
-            <div id="guia-patron" class="mt-2" style="display: none">
-              <img
-                src="{% static 'img/patron_3x3.png' %}"
-                alt="Guía patrón 3x3"
-                style="max-width: 180px"
-              />
-              <div class="form-text">
-                Usa los números como referencia para tu patrón (ej: 1-5-9).
+            {% else %}
+              <div class="mb-3">
+                <label for="id_cliente-Rut">RUT</label>
+                <input type="text" id="id_cliente-Rut" name="cliente-Rut" class="form-control" placeholder="Ej: 12.345.678-9" required />
               </div>
-            </div>
-          </div>
-
-          <!-- 🔑 Código de desbloqueo -->
-          <div class="mb-2">
-            <label for="id_dispositivo-Codigo_Bloqueo"
-              >Código de desbloqueo</label
-            >
-            <input
-              type="text"
-              id="id_dispositivo-Codigo_Bloqueo"
-              name="dispositivo-Codigo_Bloqueo"
-              class="form-control"
-              required
-            />
-          </div>
-
-          <!-- ⚠️ Tipo de falla -->
-          <div class="mb-2">
-            <label for="id_dispositivo-Tipo_Falla">Tipo de falla</label>
-            <select
-              id="id_dispositivo-Tipo_Falla"
-              name="dispositivo-Tipo_Falla"
-              class="form-select"
-              required
-            >
-              <option value="" disabled selected>Seleccione una falla</option>
-              {% for falla in dispositivo_form.fields.Tipo_Falla.queryset %}
-              <option value="{{ falla.id }}">{{ falla.Falla }}</option>
-              {% endfor %}
-              <option value="agregar_falla">➕ Agregar nueva falla</option>
-            </select>
-          </div>
-
-          <!-- Campo oculto para nueva falla -->
-          <div class="mb-2" id="campo-nueva-falla" style="display: none">
-            <label for="nueva_falla">Nueva falla</label>
-            <div class="input-group">
-              <input
-                type="text"
-                id="nueva_falla"
-                name="nueva_falla"
-                class="form-control"
-                placeholder="Describe la nueva falla"
-              />
-              <button
-                type="button"
-                id="btn-agregar-falla"
-                class="btn btn-outline-primary"
-              >
-                Agregar
-              </button>
-            </div>
-          </div>
-
-          <!-- 📝 Observaciones -->
-          <div class="mb-2">
-            <label for="id_dispositivo-Observaciones">Observaciones</label>
-            <textarea
-              id="id_dispositivo-Observaciones"
-              name="dispositivo-Observaciones"
-              class="form-control"
-              rows="3"
-              placeholder="Notas adicionales sobre el equipo o el cliente"
-            ></textarea>
+              <div class="mb-3">
+                <label for="id_cliente-Nombre">Nombre</label>
+                <input type="text" id="id_cliente-Nombre" name="cliente-Nombre" class="form-control" required />
+              </div>
+              <div class="mb-3">
+                <label for="id_cliente-Apellido">Apellido</label>
+                <input type="text" id="id_cliente-Apellido" name="cliente-Apellido" class="form-control" required />
+              </div>
+              <div class="mb-3">
+                <label for="id_cliente-Numero_telefono">Teléfono</label>
+                <input type="tel" id="id_cliente-Numero_telefono" name="cliente-Numero_telefono" class="form-control" />
+              </div>
+            {% endif %}
           </div>
         </div>
 
-        <!-- 📋 Detalles de la orden -->
+        <!-- Datos del equipo -->
         <div class="col-12">
-          <div class="card mb-3 p-3 animate-slide-up">
+          <div class="card mb-3 p-3">
+            <h6 class="mb-3">Datos del equipo</h6>
+
+            <!-- Marca (se renderiza desde dispositivo_form.fields.Marca.queryset si existe) -->
+            <div class="mb-2">
+              <label for="marca-select">Marca</label>
+              <select id="marca-select" name="dispositivo-Marca" class="form-select" required>
+                <option value="">Seleccione marca</option>
+                {% if dispositivo_form and dispositivo_form.fields.Marca.queryset %}
+                  {% for marca in dispositivo_form.fields.Marca.queryset %}
+                    <option value="{{ marca.id }}">{{ marca.Marca }}</option>
+                  {% endfor %}
+                {% endif %}
+                <option value="agregar_marca">➕ Agregar nueva marca</option>
+              </select>
+            </div>
+
+            <div id="nuevo-bloque-marca" class="mb-2" style="display:none;">
+              <label for="nueva_marca">Nueva marca</label>
+              <input type="text" id="nueva_marca" name="nueva_marca" class="form-control" />
+            </div>
+
+            <!-- Modelo (se carga por AJAX) -->
+            <div class="mb-2">
+              <label for="modelo-select">Modelo</label>
+              <select id="modelo-select" name="dispositivo-modelo" class="form-select">
+                <option value="">Seleccione modelo</option>
+              </select>
+            </div>
+
+            <div id="nuevo-modelo-input" class="mb-2" style="display:none">
+              <label for="nuevo_modelo">Nuevo modelo</label>
+              <input type="text" id="nuevo_modelo" name="nuevo_modelo" class="form-control" />
+            </div>
+
+            <!-- Método bloqueo y código -->
+            <div class="mb-2">
+              <label for="id_dispositivo-Metodo_Bloqueo">Método de bloqueo</label>
+              <select id="id_dispositivo-Metodo_Bloqueo" name="dispositivo-Metodo_Bloqueo" class="form-select" required>
+                <option value="PIN">PIN</option>
+                <option value="PASS">Contraseña</option>
+                <option value="PATRON">Patrón (matriz 3x3)</option>
+              </select>
+            </div>
+
+            <div class="mb-2">
+              <label for="id_dispositivo-Codigo_Bloqueo">Código de desbloqueo</label>
+              <input type="text" id="id_dispositivo-Codigo_Bloqueo" name="dispositivo-Codigo_Bloqueo" class="form-control" />
+            </div>
+
+            <!-- Tipo de falla: select + opción agregar -->
+            <div class="mb-2">
+              <label for="id_dispositivo-Tipo_Falla">Tipo de falla</label>
+              <select id="id_dispositivo-Tipo_Falla" name="dispositivo-Tipo_Falla" class="form-select">
+                <option value="">Seleccione una falla</option>
+                {% if dispositivo_form and dispositivo_form.fields.Tipo_Falla.queryset %}
+                  {% for falla in dispositivo_form.fields.Tipo_Falla.queryset %}
+                    <option value="{{ falla.Falla }}">{{ falla.Falla }}</option>
+                  {% endfor %}
+                {% endif %}
+                <option value="agregar_falla">➕ Agregar nueva falla</option>
+              </select>
+            </div>
+
+            <div id="campo-nueva-falla" class="mb-2" style="display:none">
+              <label for="nueva_falla">Nueva falla</label>
+              <div class="input-group">
+                <input type="text" id="nueva_falla" name="nueva_falla" class="form-control" placeholder="Describe la nueva falla" />
+                <button type="button" id="btn-agregar-falla" class="btn btn-outline-primary">Agregar</button>
+              </div>
+            </div>
+
+            <div class="mb-2">
+              <label for="id_dispositivo-Observaciones">Observaciones</label>
+              <textarea id="id_dispositivo-Observaciones" name="dispositivo-Observaciones" class="form-control" rows="3" placeholder="Notas adicionales sobre el equipo o el cliente"></textarea>
+            </div>
+          </div>
+        </div>
+
+        <!-- Detalles de la orden -->
+        <div class="col-12">
+          <div class="card mb-3 p-3">
             <h6 class="mb-3">Detalles de la orden</h6>
 
-            <div class="mb-2">
-              <label for="fecha_orden">Fecha de ingreso</label>
-              <input
-                type="date"
-                id="fecha_orden"
-                name="pedido-Fecha"
-                class="form-control"
-                required
-              />
-            </div>
-
-            <div class="mb-2">
-              <label for="costo_total">Costo total</label>
-              <input
-                type="number"
-                id="costo_total"
-                name="pedido-Coste"
-                class="form-control"
-                min="0"
-                required
-              />
-            </div>
-
-            <div class="mb-2">
-              <label for="abono">Abono</label>
-              <input
-                type="number"
-                id="abono"
-                name="pedido-Abono"
-                class="form-control"
-                min="0"
-              />
-            </div>
-
-            <div class="mb-2">
-              <label for="restante">Restante</label>
-              <input
-                type="number"
-                id="restante"
-                name="pedido-Restante"
-                class="form-control"
-                readonly
-              />
-            </div>
+            {% if pedido_form %}
+              {{ pedido_form.non_field_errors }}
+              {% for field in pedido_form %}
+                <div class="mb-2">
+                  <label for="{{ field.auto_id }}">{{ field.label }}</label>
+                  {{ field }}
+                  {% if field.help_text %}<div class="form-text small">{{ field.help_text }}</div>{% endif %}
+                  {% if field.errors %}<div class="text-danger small mt-1">{{ field.errors|striptags }}</div>{% endif %}
+                </div>
+              {% endfor %}
+            {% else %}
+              <div class="mb-2">
+                <label for="fecha_orden">Fecha de ingreso</label>
+                <input type="date" id="fecha_orden" name="pedido-Fecha" class="form-control" required />
+              </div>
+              <div class="mb-2">
+                <label for="costo_total">Costo total</label>
+                <input type="number" id="costo_total" name="pedido-Coste" class="form-control" min="0" required />
+              </div>
+              <div class="mb-2">
+                <label for="abono">Abono</label>
+                <input type="number" id="abono" name="pedido-Abono" class="form-control" min="0" />
+              </div>
+              <div class="mb-2">
+                <label for="restante">Restante</label>
+                <input type="number" id="restante" name="pedido-Restante" class="form-control" readonly />
+              </div>
+            {% endif %}
           </div>
         </div>
       </div>
@@ -315,14 +181,11 @@
   </div>
 
   <footer class="mt-auto text-center small text-muted">
-    <p class="mb-1">
-      Sistema Servisur &copy; {{ now|date:"Y" }} — Panel de Registrar reparación
-    </p>
-    <p class="mb-0">Desarrollado por el equipo técnico | Versión 1.0</p>
+    <p class="mb-1">Sistema Servisur &copy; {{ now|date:"Y" }}</p>
+    <p class="mb-0">Desarrollado por el equipo técnico</p>
   </footer>
 </div>
 
 <script src="{% static 'js/pedido.js' %}"></script>
 <script src="{% static 'js/validaciones.js' %}"></script>
-
 {% endblock %}
