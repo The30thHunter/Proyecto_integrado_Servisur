@@ -567,3 +567,77 @@ footer {
   border: 1px solid #ccc;
   border-radius: 6px;
 }
+
+/* Header personalizado */
+.header-custom {
+  background-color: #f6f8f7;   /* azul grisáceo suave */
+  color: #ffffff;
+}
+
+/* Links dentro del header */
+.header-custom .nav-link {
+  color: #e2e8f0;              /* gris claro */
+  transition: color .2s ease;
+}
+
+.header-custom .nav-link:hover {
+  color: #ffffff;              /* blanco al pasar el mouse */
+}
+
+/* Marca y textos */
+
+
+/* Botón logout (imagen) */
+
+
+/* Fondo específico para la vista Estado */
+.estado-page {
+  background: linear-gradient(180deg, #f7fbfd 0%, #f1f6f9 55%, #edf4f7 100%);
+  min-height: 100vh;
+  padding: 20px;
+}
+
+/* Tarjeta del filtro */
+.filtro-card {
+  border-radius: 10px;
+  background-color: #ffffff;
+}
+
+/* Tarjeta de la tabla */
+.tabla-card {
+  border-radius: 10px;
+  background-color: #ffffff;
+}
+
+/* Encabezado de tabla */
+.table-header th {
+  background-color: #e9f0f5;
+  color: #4b6a80;
+  font-weight: 600;
+}
+
+/* Filas alternas */
+.table tbody tr:nth-child(even) {
+  background-color: #f9fbfc;
+}
+
+/* Hover */
+.table tbody tr:hover {
+  background-color: rgba(75,106,128,0.08);
+}
+
+/* Botones */
+.btn-primary {
+  background-color: #4b6a80;
+  border: none;
+}
+.btn-primary:hover {
+  background-color: #405a6d;
+}
+.btn-outline-secondary {
+  border-color: #7d98ab;
+  color: #4b6a80;
+}
+.btn-outline-secondary:hover {
+  background-color: rgba(75,106,128,0.08);
+}

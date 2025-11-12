@@ -5,11 +5,11 @@
 {% block content %}
 <link rel="stylesheet" href="{% static 'css/panel.css' %}">
 
-<div class="container-fluid wide-container py-4">
+<div class="estado-page py-4">
 
   <div class="d-flex align-items-center justify-content-between mb-3">
     <div>
-      <h3 class="mb-0 text-secondary">Estado de Reparación</h3>
+      <h3 class="mb-0 text-secondary">📊 Estado de Reparación</h3>
       <small class="text-muted">Busca y actualiza el estado de las órdenes</small>
     </div>
     <div>
@@ -25,9 +25,9 @@
     </div>
   {% endif %}
 
-  <!-- FORMULARIO DE BÚSQUEDA (envía GET) -->
-  <form id="filtroForm" class="card mb-3 p-3" method="get" action="">
-    <div class="row g-2">
+  <!-- FORMULARIO DE BÚSQUEDA -->
+  <form id="filtroForm" class="card mb-4 p-3 shadow-sm filtro-card" method="get" action="">
+    <div class="row g-3">
       <div class="col-md-2">
         <label class="form-label small">Nro de orden</label>
         <input name="orden" id="f_orden" type="text" class="form-control form-control-sm" placeholder="Ej: 123" value="{{ filtros.orden }}">
@@ -66,83 +66,70 @@
   </form>
 
   <!-- TABLA -->
-  <div class="table-responsive card p-0">
-    <table id="tablaPedidos" class="table table-hover align-middle mb-0">
-      <thead class="table-light">
-        <tr>
-          <th>No orden</th>
-          <th>Nombre y apellido</th>
-          <th>RUT</th>
-          <th>Fecha</th>
-          <th>Modelo</th>
-          <th>Serie / MSI</th>
-          <th>Trabajo a realizar</th>
-          <th>Estado</th>
-          <th style="min-width:170px">Acción</th>
-        </tr>
-      </thead>
-      <tbody>
-        {% if pedidos %}
-          {% for p in pedidos %}
-            <tr data-orden="{{ p.N_Orden }}" data-estado="{{ p.Estado }}">
-              <td class="td-orden">{{ p.N_Orden }}</td>
-
-              <td class="td-nombre">
-                {% if p.Dispositivo and p.Dispositivo.rut %}
-                  {{ p.Dispositivo.rut.Nombre }} {{ p.Dispositivo.rut.Apellido }}
-                {% else %}
-                  -
-                {% endif %}
-              </td>
-
-              <td class="td-rut">
-                {% if p.Dispositivo and p.Dispositivo.rut %}
-                  {{ p.Dispositivo.rut.Rut }}
-                {% else %}
-                  -
-                {% endif %}
-              </td>
-
-              <td class="td-fecha">{{ p.Fecha }}</td>
-
-              <td class="td-modelo">
-                {% if p.Dispositivo and p.Dispositivo.modelo %}
-                  {{ p.Dispositivo.modelo.Marca.Marca }} {{ p.Dispositivo.modelo.Modelo }}
-                {% else %}
-                  -
-                {% endif %}
-              </td>
-
-              <td class="td-serie">{{ p.Dispositivo.Codigo_Bloqueo|default:"-" }}</td>
-
-              <td class="td-trabajo">{% if p.Tipo_de_falla %}{{ p.Tipo_de_falla.Falla }}{% else %}-{% endif %}</td>
-
-              <td class="td-estado">
-                {% for code,label in estado_choices %}
-                  {% if p.Estado == code %}{{ label }}{% endif %}
-                {% endfor %}
-              </td>
-
-              <td>
-                <!-- Form para actualizar estado (POST) -->
-                <form method="post" class="d-flex align-items-center" style="gap:6px;">
-                  {% csrf_token %}
-                  <input type="hidden" name="orden_id" value="{{ p.N_Orden }}">
-                  <select name="nuevo_estado" class="form-select form-select-sm">
-                    {% for code,label in estado_choices %}
-                      <option value="{{ code }}" {% if p.Estado == code %}selected{% endif %}>{{ label }}</option>
-                    {% endfor %}
-                  </select>
-                  <button type="submit" class="btn btn-sm btn-outline-primary">Guardar</button>
-                </form>
-              </td>
-            </tr>
-          {% endfor %}
-        {% else %}
-          <tr><td colspan="9" class="text-center text-muted">No hay registros que mostrar.</td></tr>
-        {% endif %}
-      </tbody>
-    </table>
+  <div class="card shadow-sm p-2 tabla-card">
+    <div class="table-responsive">
+      <table id="tablaPedidos" class="table table-hover align-middle mb-0">
+        <thead class="table-header">
+          <tr>
+            <th>No orden</th>
+            <th>Nombre y apellido</th>
+            <th>RUT</th>
+            <th>Fecha</th>
+            <th>Modelo</th>
+            <th>Serie / MSI</th>
+            <th>Trabajo a realizar</th>
+            <th>Estado</th>
+            <th style="min-width:170px">Acción</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% if pedidos %}
+            {% for p in pedidos %}
+              <tr data-orden="{{ p.N_Orden }}" data-estado="{{ p.Estado }}">
+                <td class="td-orden">{{ p.N_Orden }}</td>
+                <td class="td-nombre">
+                  {% if p.Dispositivo and p.Dispositivo.rut %}
+                    {{ p.Dispositivo.rut.Nombre }} {{ p.Dispositivo.rut.Apellido }}
+                  {% else %}-{% endif %}
+                </td>
+                <td class="td-rut">
+                  {% if p.Dispositivo and p.Dispositivo.rut %}
+                    {{ p.Dispositivo.rut.Rut }}
+                  {% else %}-{% endif %}
+                </td>
+                <td class="td-fecha">{{ p.Fecha }}</td>
+                <td class="td-modelo">
+                  {% if p.Dispositivo and p.Dispositivo.modelo %}
+                    {{ p.Dispositivo.modelo.Marca.Marca }} {{ p.Dispositivo.modelo.Modelo }}
+                  {% else %}-{% endif %}
+                </td>
+                <td class="td-serie">{{ p.Dispositivo.Codigo_Bloqueo|default:"-" }}</td>
+                <td class="td-trabajo">{% if p.Tipo_de_falla %}{{ p.Tipo_de_falla.Falla }}{% else %}-{% endif %}</td>
+                <td class="td-estado">
+                  {% for code,label in estado_choices %}
+                    {% if p.Estado == code %}{{ label }}{% endif %}
+                  {% endfor %}
+                </td>
+                <td>
+                  <form method="post" class="d-flex align-items-center" style="gap:6px;">
+                    {% csrf_token %}
+                    <input type="hidden" name="orden_id" value="{{ p.N_Orden }}">
+                    <select name="nuevo_estado" class="form-select form-select-sm">
+                      {% for code,label in estado_choices %}
+                        <option value="{{ code }}" {% if p.Estado == code %}selected{% endif %}>{{ label }}</option>
+                      {% endfor %}
+                    </select>
+                    <button type="submit" class="btn btn-sm btn-outline-primary">Guardar</button>
+                  </form>
+                </td>
+              </tr>
+            {% endfor %}
+          {% else %}
+            <tr><td colspan="9" class="text-center text-muted">No hay registros que mostrar.</td></tr>
+          {% endif %}
+        </tbody>
+      </table>
+    </div>
   </div>
 
   <div class="mt-3 text-muted small">Nota: Cambiar el estado enviará el formulario (POST) y recargará la página para reflejar el cambio.</div>
