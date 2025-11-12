@@ -22,7 +22,7 @@
       <div class="row gx-3">
         <!-- Datos del cliente (usar cliente_form si existe, sino inputs fallback) -->
         <div class="col-12">
-          <div class="card mb-3 p-3">
+          <div class="card mb-3 p-3 animate-slide-up">
             <h6 class="mb-3">Datos del cliente</h6>
         
             <!-- Botones para elegir tipo de identificación -->
@@ -56,6 +56,7 @@
             <div class="mb-3">
               <label for="id_cliente-Nombre">Nombre</label>
               <input type="text" id="id_cliente-Nombre" name="cliente-Nombre" class="form-control" required />
+              <span id="tick-nombre" class="valid-icon"></span>
             </div>
         
             <!-- Apellido -->
@@ -75,7 +76,7 @@
 
         <!-- Datos del equipo -->
         <div class="col-12">
-          <div class="card mb-3 p-3">
+          <div class="card mb-3 p-3 animate-slide-up">
             <h6 class="mb-3">Datos del equipo</h6>
 
             <!-- Marca (se renderiza desde dispositivo_form.fields.Marca.queryset si existe) -->
@@ -133,10 +134,11 @@
 
             </div>
 
-            <div class="mb-2">
+            <div id="bloque-codigo" class="mb-2" style="display: none;">
               <label for="id_dispositivo-Codigo_Bloqueo">Código de desbloqueo</label>
               <input type="text" id="id_dispositivo-Codigo_Bloqueo" name="dispositivo-Codigo_Bloqueo" class="form-control" />
             </div>
+
 
             <!-- Tipo de falla: select + opción agregar -->
             <div class="mb-2">
@@ -168,7 +170,7 @@
 
         <!-- Detalles de la orden -->
         <div class="col-12">
-          <div class="card mb-3 p-3">
+          <div class="card mb-3 p-3 animate-slide-up">
             <h6 class="mb-3">Detalles de la orden</h6>
 
             {% if pedido_form %}

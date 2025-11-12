@@ -1,3 +1,8 @@
+// ==========================
+// Lógica principal (marcas, modelos, fallas, etc.)
+// ==========================
+
+
 // ✅ Cálculo automático del campo Restante
 document.addEventListener("DOMContentLoaded", function () {
   const costeInput = document.getElementById("id_pedido-Coste");
@@ -207,7 +212,7 @@ selectFalla?.addEventListener("change", () => {
   inputNuevaFalla.classList.remove("is-invalid", "is-valid");
 });
 
-// ✅ Validar selección antes de enviar el formulario
+ /*// ✅ Validar selección antes de enviar el formulario
 document.querySelector("form")?.addEventListener("submit", function (e) {
   const seleccion = selectFalla.value;
   let valido = true;
@@ -236,7 +241,7 @@ document.querySelector("form")?.addEventListener("submit", function (e) {
     selectFalla.scrollIntoView({ behavior: "smooth", block: "center" });
     selectFalla.focus();
   }
-});
+});*/
 
 // ✅ Función para agregar nueva falla vía AJAX
 function agregarFalla() {
@@ -339,14 +344,51 @@ function mostrarMensaje(texto) {
   }, 2500);
 }
 
+//PARTE DE METODO DE BLOQUEO
+
 document.addEventListener("DOMContentLoaded", () => {
   const metodoSelect = document.getElementById("id_dispositivo-Metodo_Bloqueo");
   const imagenPatron = document.getElementById("imagen-patron");
+  const bloqueCodigo = document.getElementById("bloque-codigo");
+  const codigoInput = document.getElementById("id_dispositivo-Codigo_Bloqueo");
 
-  metodoSelect?.addEventListener("change", () => {
+  function actualizarAyudaBloqueo() {
+    let ayuda = document.getElementById("ayuda-bloqueo");
+
+    if (!ayuda) {
+      ayuda = document.createElement("div");
+      ayuda.id = "ayuda-bloqueo";
+      ayuda.className = "form-text mt-1";
+      codigoInput.parentNode.appendChild(ayuda);
+    }
+
+    const metodo = metodoSelect.value;
+
+    if (metodo === "PIN") {
+      codigoInput.placeholder = "Ej: 1234";
+      ayuda.textContent = "Ingresa un PIN numérico de 4 a 6 dígitos.";
+    } else if (metodo === "PASS") {
+      codigoInput.placeholder = "Ej: claveSegura123";
+      ayuda.textContent = "Ingresa una contraseña de al menos 6 caracteres.";
+    } else if (metodo === "PATRON") {
+      codigoInput.placeholder = "Ej: 1-2-4-5";
+      ayuda.textContent = "Ingresa la secuencia del patrón usando números del 1 al 9 (ej: 1-2-4-5).";
+    } else {
+      codigoInput.placeholder = "";
+      ayuda.textContent = "";
+    }
+  }
+
+  function actualizarVisibilidadBloqueo() {
     const valor = metodoSelect.value;
+    const mostrar = valor === "PIN" || valor === "PASS" || valor === "PATRON";
+    bloqueCodigo.style.display = mostrar ? "block" : "none";
     imagenPatron.style.display = valor === "PATRON" ? "block" : "none";
-  });
+    actualizarAyudaBloqueo();
+  }
+
+  metodoSelect?.addEventListener("change", actualizarVisibilidadBloqueo);
+  actualizarVisibilidadBloqueo(); // inicializa al cargar
 });
 
 

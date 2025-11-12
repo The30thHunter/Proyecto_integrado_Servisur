@@ -641,3 +641,12 @@ footer {
 .btn-outline-secondary:hover {
   background-color: rgba(75,106,128,0.08);
 }
+
+.valid-icon::before {
+  content: "✅";
+  visibility: hidden;
+}
+
+.valid-icon.valid::before {
+  visibility: visible;
+}
