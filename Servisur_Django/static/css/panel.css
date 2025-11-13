@@ -651,19 +651,34 @@ footer {
   visibility: visible;
 }
 
-.notificacion {
-  position: fixed;
-  top: 20px;
-  right: 20px;
-  background: #f44336;
-  color: white;
-  padding: 10px 16px;
-  border-radius: 6px;
-  opacity: 0;
-  transition: opacity 0.4s ease;
-  z-index: 9999;
+
+
+/*esto es del boton que hay en estado de repaarcion*/
+
+/* Botón circular transparente sin fondo */
+.btn-circle {
+  background: transparent !important;   /* elimina fondo blanco */
+  border: none !important;              /* sin borde */
+  border-radius: 50%;                   /* forma circular */
+  padding: 4px;                         /* espacio interno reducido */
+  width: 30px;                          /* tamaño del botón */
+  height: 30px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: none;
 }
 
-.notificacion.mostrar {
-  opacity: 1;
+/* GIF reducido dentro del botón */
+.btn-circle .info-img {
+  width: 30px;
+  height: 30px;
+  object-fit: contain;
+}
+
+/* Hover opcional para indicar clic */
+.btn-circle:hover {
+  background-color: rgba(255,255,255,0.0); /* sigue transparente */
+  transform: scale(1.05);
+  transition: all 0.2s ease;
 }
