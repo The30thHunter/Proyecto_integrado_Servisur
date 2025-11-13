@@ -3,21 +3,21 @@ from django.db import models
 # 🧍 Modelo para clientes
 class Cliente(models.Model):
     ORIGEN_CHOICES = [
-    ('NAC', 'Nacional'),
-    ('EXT', 'Extranjero'),
+        ('NAC', 'Nacional'),
+        ('EXT', 'Extranjero'),
     ]
-    Origen = models.CharField(max_length=3,choices=ORIGEN_CHOICES,default='NAC')
+
+    Origen = models.CharField(max_length=3, choices=ORIGEN_CHOICES, default='NAC')
     Nombre = models.CharField(max_length=20)
     Apellido = models.CharField(max_length=20)
-    Numero_telefono = models.CharField(max_length=15,null=True)
-    Rut = models.CharField(max_length=50)
+    Numero_telefono = models.CharField(max_length=15, null=True, blank=True)
+    Rut = models.CharField(max_length=50, null=True, blank=True)
+    DocumentoExtranjero = models.CharField(max_length=50, null=True, blank=True)
     Activo = models.BooleanField(default=True)
 
     def __str__(self):
-        return f"{self.Nombre} {self.Apellido}"
+        return f"{self.Nombre} {self.Apellido} ({self.Origen})"
 
-    class Meta:
-        verbose_name_plural = "Clientes"
 
 # 🏷️ Marca de dispositivos
 class Marca(models.Model):

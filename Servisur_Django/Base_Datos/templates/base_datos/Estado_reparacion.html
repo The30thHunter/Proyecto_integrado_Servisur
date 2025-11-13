@@ -73,7 +73,7 @@
           <tr>
             <th>No orden</th>
             <th>Nombre y apellido</th>
-            <th>RUT</th>
+            <th>RUT/DNI</th>
             <th>Fecha</th>
             <th>Modelo</th>
             <th>Serie / MSI</th>
@@ -94,9 +94,14 @@
                 </td>
                 <td class="td-rut">
                   {% if p.Dispositivo and p.Dispositivo.rut %}
-                    {{ p.Dispositivo.rut.Rut }}
+                  {% if p.Dispositivo.rut.Origen == "NAC" %}
+                  {{ p.Dispositivo.rut.Rut }}
+                  {% else %}
+                  {{ p.Dispositivo.rut.DocumentoExtranjero }}
+                  {% endif %}
                   {% else %}-{% endif %}
                 </td>
+
                 <td class="td-fecha">{{ p.Fecha }}</td>
                 <td class="td-modelo">
                   {% if p.Dispositivo and p.Dispositivo.modelo %}
@@ -136,7 +141,6 @@
 </div>
 
 <footer class="mt-auto text-center small text-muted">
-  <hr />
   <p class="mb-1">Sistema Servisur &copy; {{ now|date:"Y" }} — Estado de reparaciones</p>
   <p class="mb-0">Desarrollado por el equipo técnico | Versión 1.0</p>
 </footer>

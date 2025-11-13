@@ -25,53 +25,52 @@
           <div class="card mb-3 p-3 animate-slide-up">
             <h6 class="mb-3">Datos del cliente</h6>
         
-            <!-- Botones para elegir tipo de identificación -->
-            <div class="mb-3">
-              <label class="form-label d-block mb-2">Tipo de identificación</label>
-              <div class="btn-group" role="group" aria-label="Tipo de identificación">
-                <input type="radio" class="btn-check" name="tipo_identificacion" id="btn-rut" value="rut" autocomplete="off"
-                  required>
-                <label class="btn btn-outline-primary" for="btn-rut">RUT</label>
-        
-                <input type="radio" class="btn-check" name="tipo_identificacion" id="btn-pasaporte" value="pasaporte"
-                  autocomplete="off" required>
-                <label class="btn btn-outline-primary" for="btn-pasaporte">Pasaporte / DNI</label>
-              </div>
-            </div>
-        
-            <!-- Campo RUT -->
-            <div id="campo-rut" class="mb-3" style="display: none;">
-              <label for="id_cliente-Rut">RUT</label>
-              <input type="text" id="id_cliente-Rut" name="cliente-Rut" class="form-control" placeholder="Ej: 12.345.678-9" />
-            </div>
-        
-            <!-- Campo Pasaporte / DNI -->
-            <div id="campo-pasaporte" class="mb-3" style="display: none;">
-              <label for="id_cliente-Pasaporte">Pasaporte / DNI</label>
-              <input type="text" id="id_cliente-Pasaporte" name="cliente-Pasaporte" class="form-control"
-                placeholder="Ej: ABC123456" />
-            </div>
-        
-            <!-- Nombre -->
-            <div class="mb-3">
-              <label for="id_cliente-Nombre">Nombre</label>
-              <input type="text" id="id_cliente-Nombre" name="cliente-Nombre" class="form-control" required />
-              <span id="tick-nombre" class="valid-icon"></span>
-            </div>
-        
-            <!-- Apellido -->
-            <div class="mb-3">
-              <label for="id_cliente-Apellido">Apellido</label>
-              <input type="text" id="id_cliente-Apellido" name="cliente-Apellido" class="form-control" required />
-            </div>
-        
-            <!-- Teléfono -->
-            <div class="mb-3">
-              <label for="id_cliente-Numero_telefono">Teléfono</label>
-              <input type="tel" id="id_cliente-Numero_telefono" name="cliente-Numero_telefono" class="form-control" />
+          <!-- Selector de tipo de identificación -->
+          <div class="mb-3">
+            <label class="form-label d-block mb-2">Tipo de identificación</label>
+            <div class="btn-group" role="group" aria-label="Tipo de identificación">
+              <input type="radio" class="btn-check" name="Origen" id="btn-rut" value="NAC" autocomplete="off" checked>
+              <label class="btn btn-outline-primary" for="btn-rut">RUT</label>
+          
+              <input type="radio" class="btn-check" name="Origen" id="btn-pasaporte" value="EXT" autocomplete="off">
+              <label class="btn btn-outline-primary" for="btn-pasaporte">Pasaporte / DNI</label>
             </div>
           </div>
-        </div>
+          
+          <!-- Campo RUT -->
+          <div id="campo-rut" class="mb-3">
+            <label for="id_cliente-Rut">RUT</label>
+            <input type="text" id="id_cliente-Rut" name="Rut" class="form-control" placeholder="Ej: 12.345.678-9" />
+            <div id="mensaje-identificacion" class="form-text text-danger mt-1" style="display: none;"></div>
+            <div id="error-rut" class="invalid-feedback">Por favor, rellena el campo RUT con un formato válido.</div>
+          </div>
+          
+          <!-- Campo Pasaporte / DNI -->
+          <div id="campo-pasaporte" class="mb-3" style="display: none;">
+            <label for="id_cliente-Pasaporte">Pasaporte / DNI</label>
+            <input type="text" id="id_cliente-Pasaporte" name="DocumentoExtranjero" class="form-control"
+              placeholder="Ej: ABC123456" />
+            <div id="mensaje-pasaporte" class="form-text text-danger mt-1" style="display: none;"></div>
+          </div>
+          
+          <!-- Nombre -->
+          <div class="mb-3">
+            <label for="id_cliente-Nombre">Nombre</label>
+            <input type="text" id="id_cliente-Nombre" name="Nombre" class="form-control" required />
+          </div>
+          
+          <!-- Apellido -->
+          <div class="mb-3">
+            <label for="id_cliente-Apellido">Apellido</label>
+            <input type="text" id="id_cliente-Apellido" name="Apellido" class="form-control" required />
+          </div>
+          
+          <!-- Teléfono -->
+          <div class="mb-3">
+            <label for="id_cliente-Numero_telefono">Teléfono</label>
+            <input type="tel" id="id_cliente-Numero_telefono" name="Numero_telefono" class="form-control" />
+          </div>
+
 
 
         <!-- Datos del equipo -->

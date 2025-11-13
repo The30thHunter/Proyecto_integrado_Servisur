@@ -11,7 +11,7 @@ class ClienteForm(forms.ModelForm):
             'Nombre': forms.TextInput(attrs={'class': 'form-control'}),
             'Apellido': forms.TextInput(attrs={'class': 'form-control'}),
             'Numero_telefono': forms.TextInput(attrs={'class': 'form-control'}),
-            'Rut': forms.NumberInput(attrs={'class': 'form-control'}),
+            'Rut': forms.TextInput(attrs={'class': 'form-control'}),
         }
 
     def clean_Rut(self):

@@ -46,20 +46,32 @@ def main_view(request):
 def registrar_reparacion(request):
     if request.method == 'POST':
         # 🧍 Cliente
-        nombre = request.POST.get('cliente-Nombre')
-        apellido = request.POST.get('cliente-Apellido')
-        telefono = request.POST.get('cliente-Numero_telefono')
-        rut = request.POST.get('cliente-Rut')
+        origen = request.POST.get('Origen')
+        nombre = request.POST.get('Nombre') or request.POST.get('cliente-Nombre')
+        apellido = request.POST.get('Apellido') or request.POST.get('cliente-Apellido')
+        telefono = request.POST.get('Numero_telefono') or request.POST.get('cliente-Numero_telefono')
+        rut = request.POST.get('Rut') or request.POST.get('cliente-Rut')
+        dni = request.POST.get('DocumentoExtranjero') or request.POST.get('cliente-Pasaporte')
 
-        cliente, _ = Cliente.objects.get_or_create(
-            Rut=rut,
-            defaults={
-                'Nombre': nombre,
-                'Apellido': apellido,
-                'Numero_telefono': telefono,
-                'Activo': True,
-            }
-        )
+        # Buscar cliente por RUT o DNI
+        cliente = None
+        if origen == 'NAC' and rut:
+            cliente = Cliente.objects.filter(Rut=rut).first()
+        elif origen == 'EXT' and dni:
+            cliente = Cliente.objects.filter(DocumentoExtranjero=dni).first()
+
+        # Si no existe, lo creamos
+        if not cliente:
+            cliente = Cliente.objects.create(
+                Origen=origen,
+                Nombre=nombre,
+                Apellido=apellido,
+                Numero_telefono=telefono,
+                Rut=rut if origen == 'NAC' else None,
+                DocumentoExtranjero=dni if origen == 'EXT' else None,
+                Activo=True
+            )
+
 
         # 🏷️ Marca y Modelo
         marca_id = request.POST.get('dispositivo-Marca')
@@ -170,7 +182,11 @@ def estado_reparacion_view(request):
             qs = qs.filter(Fecha__icontains=fecha)
 
     if doc:
-        qs = qs.filter(Dispositivo__rut__Rut__icontains=doc)
+        qs = qs.filter(
+            models.Q(Dispositivo__rut__Rut__icontains=doc) |
+            models.Q(Dispositivo__rut__DocumentoExtranjero__icontains=doc)
+        )
+
 
     if nombre:
         qs = qs.filter(
@@ -622,3 +638,4 @@ def pedido_actualizar_view(request, orden_id):
         return JsonResponse({'ok': True, 'message': 'Orden actualizada'})
     except Exception as e:
         return JsonResponse({'ok': False, 'error': str(e)}, status=500)
+
