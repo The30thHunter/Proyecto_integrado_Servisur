@@ -133,7 +133,11 @@
                 </td>
                 <td class="td-rut">
                   {% if p.Dispositivo and p.Dispositivo.rut %}
-                    {{ p.Dispositivo.rut.Rut }}
+                  {% if p.Dispositivo.rut.Origen == "NAC" %}
+                  {{ p.Dispositivo.rut.Rut }}
+                  {% else %}
+                  {{ p.Dispositivo.rut.DocumentoExtranjero }}
+                  {% endif %}
                   {% else %}-{% endif %}
                 </td>
                 <td class="td-fecha">{{ p.Fecha }}</td>

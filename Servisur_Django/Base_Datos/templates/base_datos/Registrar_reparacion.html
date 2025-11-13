@@ -39,7 +39,7 @@
           
           <!-- Campo RUT -->
           <div id="campo-rut" class="mb-3">
-            <label for="id_cliente-Rut">RUT</label>
+            <label for="id_cliente-Rut">RUT*</label>
             <input type="text" id="id_cliente-Rut" name="Rut" class="form-control" placeholder="Ej: 12.345.678-9" />
             <div id="mensaje-identificacion" class="form-text text-danger mt-1" style="display: none;"></div>
             <div id="error-rut" class="invalid-feedback">Por favor, rellena el campo RUT con un formato válido.</div>
@@ -47,29 +47,33 @@
           
           <!-- Campo Pasaporte / DNI -->
           <div id="campo-pasaporte" class="mb-3" style="display: none;">
-            <label for="id_cliente-Pasaporte">Pasaporte / DNI</label>
+            <label for="id_cliente-Pasaporte">Pasaporte / DNI*</label>
             <input type="text" id="id_cliente-Pasaporte" name="DocumentoExtranjero" class="form-control"
               placeholder="Ej: ABC123456" />
             <div id="mensaje-pasaporte" class="form-text text-danger mt-1" style="display: none;"></div>
           </div>
           
-          <!-- Nombre -->
-          <div class="mb-3">
-            <label for="id_cliente-Nombre">Nombre</label>
-            <input type="text" id="id_cliente-Nombre" name="Nombre" class="form-control" required />
-          </div>
-          
-          <!-- Apellido -->
-          <div class="mb-3">
-            <label for="id_cliente-Apellido">Apellido</label>
-            <input type="text" id="id_cliente-Apellido" name="Apellido" class="form-control" required />
-          </div>
-          
-          <!-- Teléfono -->
-          <div class="mb-3">
-            <label for="id_cliente-Numero_telefono">Teléfono</label>
-            <input type="tel" id="id_cliente-Numero_telefono" name="Numero_telefono" class="form-control" />
-          </div>
+        <!-- Nombre -->
+        <div class="mb-3">
+          <label for="id_cliente-Nombre">Nombre*</label>
+          <input type="text" id="id_cliente-Nombre" name="Nombre" class="form-control" required />
+          <div id="error-nombre" class="invalid-feedback" style="display: none;"></div>
+        </div>
+        
+        <!-- Apellido -->
+        <div class="mb-3">
+          <label for="id_cliente-Apellido">Apellido</label>
+          <input type="text" id="id_cliente-Apellido" name="Apellido" class="form-control" />
+          <div id="error-apellido" class="invalid-feedback" style="display: none;"></div>
+        </div>
+        
+        <!-- Teléfono -->
+        <div class="mb-3">
+          <label for="id_cliente-Numero_telefono">Teléfono</label>
+          <input type="tel" id="id_cliente-Numero_telefono" name="Numero_telefono" class="form-control" />
+          <div id="error-telefono" class="invalid-feedback" style="display: none;"></div>
+        </div>
+      </div>
 
 
 
@@ -96,7 +100,6 @@
               <label for="nueva_marca">Nueva marca</label>
               <div class="input-group">
                 <input type="text" id="nueva_marca" name="nueva_marca" class="form-control" placeholder="Ej: Samsung, Huawei..." />
-                <button type="button" id="btn-agregar-marca" class="btn btn-outline-primary">Agregar</button>
               </div>
             </div>
 

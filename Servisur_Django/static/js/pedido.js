@@ -133,6 +133,7 @@ document.addEventListener("DOMContentLoaded", function () {
           nuevaMarcaInput.classList.remove("is-invalid");
           nuevoBloqueMarca.style.display = "none";
 
+
           marcaSelect.dispatchEvent(new Event("change"));
 
           // ✅ Seleccionar automáticamente “Agregar nuevo modelo”
@@ -278,7 +279,7 @@ function agregarFalla() {
       campoNuevaFalla.style.display = "none";
       inputNuevaFalla.value = "";
 
-      mostrarMensaje("✅ Falla agregada correctamente.");
+      mostrarNotificacion("✅ Falla agregada correctamente", "exito");
     })
     .catch(() => {
       inputNuevaFalla.classList.add("is-invalid");
@@ -406,4 +407,3 @@ document.addEventListener("DOMContentLoaded", () => {
   btnRut?.addEventListener("change", actualizarCampos);
   btnPasaporte?.addEventListener("change", actualizarCampos);
 });
-

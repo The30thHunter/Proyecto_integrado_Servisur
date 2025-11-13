@@ -682,3 +682,17 @@ footer {
   transform: scale(1.05);
   transition: all 0.2s ease;
 }
+
+.is-invalid {
+  border-color: #dc3545;
+}
+
+.is-valid {
+  border-color: #28a745;
+}
+
+.invalid-feedback {
+  color: #dc3545;
+  font-size: 0.875rem;
+  margin-top: 4px;
+}
