@@ -653,10 +653,7 @@ footer {
 
 
 
-/*esto es del gif que hay en estado de repaarcion*/
-
-/* Botón circular transparente */
-
+/*esto es del boton que hay en estado de repaarcion*/
 
 /* Botón circular transparente sin fondo */
 .btn-circle {
@@ -664,8 +661,8 @@ footer {
   border: none !important;              /* sin borde */
   border-radius: 50%;                   /* forma circular */
   padding: 4px;                         /* espacio interno reducido */
-  width: 40px;                          /* tamaño del botón */
-  height: 40px;
+  width: 30px;                          /* tamaño del botón */
+  height: 30px;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -674,8 +671,8 @@ footer {
 
 /* GIF reducido dentro del botón */
 .btn-circle .info-img {
-  width: 28px;
-  height: 28px;
+  width: 30px;
+  height: 30px;
   object-fit: contain;
 }
 
