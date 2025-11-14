@@ -132,6 +132,7 @@ document.addEventListener("DOMContentLoaded", function () {
           nuevaMarcaInput.value = "";
           nuevaMarcaInput.classList.remove("is-invalid");
           nuevoBloqueMarca.style.display = "none";
+       
 
 
           marcaSelect.dispatchEvent(new Event("change"));
@@ -151,6 +152,7 @@ document.addEventListener("DOMContentLoaded", function () {
         .catch(() => nuevaMarcaInput.classList.add("is-invalid"));
     }
   });
+
 
   // ✅ Agregar nuevo modelo
   nuevoModeloInput.addEventListener("keydown", function (e) {
@@ -367,13 +369,13 @@ document.addEventListener("DOMContentLoaded", () => {
 
     if (metodo === "PIN") {
       codigoInput.placeholder = "Ej: 1234";
-      ayuda.textContent = "Ingresa un PIN numérico de 4 a 6 dígitos.";
+      ayuda.textContent = "";
     } else if (metodo === "PASS") {
       codigoInput.placeholder = "Ej: claveSegura123";
-      ayuda.textContent = "Ingresa una contraseña de al menos 6 caracteres.";
+      ayuda.textContent = "";
     } else if (metodo === "PATRON") {
       codigoInput.placeholder = "Ej: 1-2-4-5";
-      ayuda.textContent = "Ingresa la secuencia del patrón usando números del 1 al 9 (ej: 1-2-4-5).";
+      ayuda.textContent = "";
     } else {
       codigoInput.placeholder = "";
       ayuda.textContent = "";
@@ -407,3 +409,4 @@ document.addEventListener("DOMContentLoaded", () => {
   btnRut?.addEventListener("change", actualizarCampos);
   btnPasaporte?.addEventListener("change", actualizarCampos);
 });
+
