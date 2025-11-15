@@ -1,4 +1,5 @@
 from django import forms
+from django.utils import timezone
 from django.utils.translation import gettext_lazy as _
 from .models import Cliente, Pedido, Marca, Modelo, Dispositivo, Tipo_Falla
 
@@ -15,52 +16,48 @@ class ClienteForm(forms.ModelForm):
         }
 
     def clean_Rut(self):
-        rut = self.cleaned_data.get('Rut')
+        rut = (self.cleaned_data.get('Rut') or '').strip()
         instancia = getattr(self, 'instance', None)
-        qs = Cliente.objects.filter(Rut=rut)
+        qs = Cliente.objects.filter(Rut__iexact=rut)
         if instancia and instancia.pk:
             qs = qs.exclude(pk=instancia.pk)
         if rut and qs.exists():
-            raise forms.ValidationError("Ya existe un cliente con este RUT.")
-        return rut
+            raise forms.ValidationError(_("Ya existe un cliente con este RUT."))
+        return rut or None
 
 
-"""# 📋 Formulario para registrar un pedido (orden de reparación)
+# 📋 Formulario para pedidos (órdenes)
 class PedidoForm(forms.ModelForm):
-    Cliente = forms.ModelChoiceField(
-        queryset=Cliente.objects.filter(Activo=True),
-        required=False,
-        widget=forms.Select(attrs={'class': 'form-select'})
-    )
-    Dispositivo = forms.ModelChoiceField(
-        queryset=Dispositivo.objects.filter(Activo=True),
-        required=False,
-        widget=forms.Select(attrs={'class': 'form-select'})
-    )
-
     class Meta:
         model = Pedido
-        fields = ['Fecha', 'Coste', 'Abono', 'Restante', 'Cliente', 'Dispositivo']
+        # Restante es campo no editable, no debe incluirse en el form
+        fields = ['Fecha', 'Coste', 'Abono', 'Dispositivo', 'Activo', 'Estado', 'Observaciones', 'Tipo_de_falla']
         widgets = {
             'Fecha': forms.DateInput(attrs={'type': 'date', 'class': 'form-control', 'id': 'id_pedido-Fecha'}),
             'Coste': forms.NumberInput(attrs={'class': 'form-control', 'id': 'id_pedido-Coste'}),
             'Abono': forms.NumberInput(attrs={'class': 'form-control', 'id': 'id_pedido-Abono'}),
-            'Restante': forms.NumberInput(attrs={'class': 'form-control', 'id': 'id_pedido-Restante'}),
-        }"""
-        
-        
-class PedidoForm(forms.ModelForm):
-    class Meta:
-        model = Pedido
-        fields = ['Fecha', 'Coste', 'Abono', 'Restante']  # quitar Cliente y Dispositivo
-        widgets = {
-            'Fecha': forms.DateInput(attrs={'type': 'date', 'class': 'form-control', 'id': 'id_pedido-Fecha'}),
-            'Coste': forms.NumberInput(attrs={'class': 'form-control', 'id': 'id_pedido-Coste'}),
-            'Abono': forms.NumberInput(attrs={'class': 'form-control', 'id': 'id_pedido-Abono'}),
-            'Restante': forms.NumberInput(attrs={'class': 'form-control', 'id': 'id_pedido-Restante', 'readonly': True}),
+            'Dispositivo': forms.Select(attrs={'class': 'form-select', 'id': 'id_pedido-Dispositivo'}),
+            'Activo': forms.CheckboxInput(attrs={'class': 'form-check-input'}),
+            'Estado': forms.Select(attrs={'class': 'form-select'}),
+            'Observaciones': forms.TextInput(attrs={'class': 'form-control'}),
+            'Tipo_de_falla': forms.Select(attrs={'class': 'form-select'}),
         }
 
-        
+    def clean_Fecha(self):
+        fecha = self.cleaned_data.get('Fecha')
+        hoy = timezone.localdate()
+        if fecha != hoy:
+            raise forms.ValidationError(_("La fecha del pedido debe ser la fecha actual."))
+        return fecha
+
+    def clean(self):
+        cleaned = super().clean()
+        coste = cleaned.get('Coste') or 0
+        abono = cleaned.get('Abono') or 0
+        if abono > coste:
+            self.add_error('Abono', _("El abono no puede ser mayor que el coste total."))
+        return cleaned
+
 
 # 🏷️ Formulario para registrar una nueva marca
 class MarcaForm(forms.ModelForm):
@@ -72,17 +69,22 @@ class MarcaForm(forms.ModelForm):
         }
 
     def clean_Marca(self):
-        nombre = self.cleaned_data.get('Marca', '').strip()
-        if nombre and Marca.objects.filter(Marca__iexact=nombre).exists():
-            raise forms.ValidationError("Ya existe una marca con ese nombre.")
+        nombre = (self.cleaned_data.get('Marca') or '').strip()
+        instancia = getattr(self, 'instance', None)
+        qs = Marca.objects.filter(Marca__iexact=nombre)
+        if instancia and instancia.pk:
+            qs = qs.exclude(pk=instancia.pk)
+        if nombre and qs.exists():
+            raise forms.ValidationError(_("Ya existe una marca con ese nombre."))
         return nombre
+
 
 # 📦 Formulario para registrar un modelo de dispositivo
 class ModeloForm(forms.ModelForm):
     Marca = forms.ModelChoiceField(
         queryset=Marca.objects.all(),
         empty_label='Seleccione Marca',
-        required=False,
+        required=True,
         widget=forms.Select(attrs={'class': 'form-select'})
     )
 
@@ -93,15 +95,23 @@ class ModeloForm(forms.ModelForm):
             'Modelo': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Nombre del modelo'}),
         }
 
+    def clean_Modelo(self):
+        nombre = (self.cleaned_data.get('Modelo') or '').strip()
+        return nombre
+
     def clean(self):
         cleaned_data = super().clean()
         nombre = cleaned_data.get('Modelo', '').strip()
         marca = cleaned_data.get('Marca')
-
         if nombre and marca:
-            existe = Modelo.objects.filter(Modelo__iexact=nombre, Marca=marca).exists()
-            if existe:
-                raise forms.ValidationError("Ya existe ese modelo para la marca seleccionada.")
+            qs = Modelo.objects.filter(Modelo__iexact=nombre, Marca=marca)
+            instancia = getattr(self, 'instance', None)
+            if instancia and instancia.pk:
+                qs = qs.exclude(pk=instancia.pk)
+            if qs.exists():
+                raise forms.ValidationError(_("Ya existe ese modelo para la marca seleccionada."))
+        return cleaned_data
+
 
 # 💻 Formulario para registrar un dispositivo específico
 class DispositivoForm(forms.ModelForm):
@@ -116,11 +126,12 @@ class DispositivoForm(forms.ModelForm):
         required=False,
         widget=forms.Select(attrs={'class': 'form-select', 'id': 'modelo-select'})
     )
-    
+
     Tipo_Falla = forms.ModelChoiceField(
         queryset=Tipo_Falla.objects.all(),
         required=False,
-        label="Tipo de falla"
+        label="Tipo de falla",
+        widget=forms.Select(attrs={'class': 'form-select'})
     )
 
     Codigo_Bloqueo = forms.CharField(
@@ -135,28 +146,25 @@ class DispositivoForm(forms.ModelForm):
         model = Dispositivo
         fields = [
             "modelo",
-            #"rut",
             "Metodo_Bloqueo",
             "Codigo_Bloqueo",
-            "Tipo_Falla",  
+            "Tipo_Falla",
         ]
-
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
 
-    # Por defecto no hay modelos
+        # Por defecto no hay modelos
         self.fields['modelo'].queryset = Modelo.objects.none()
 
-    # detectar prefijo si existe
+        # Lógica para poblar modelos según la marca enviada en POST o según la instancia
+        pref = getattr(self, 'prefix', None)
         marca_field_name = 'Marca'
         modelo_field_name = 'modelo'
-        pref = getattr(self, 'prefix', None)
         if pref:
             marca_field_name = f'{pref}-Marca'
             modelo_field_name = f'{pref}-modelo'
 
-    # 1) Si viene con datos (POST/GET), usar la marca enviada para poblar modelos
         if marca_field_name in self.data:
             try:
                 raw = self.data.get(marca_field_name)
@@ -166,7 +174,6 @@ class DispositivoForm(forms.ModelForm):
             except (ValueError, TypeError):
                 self.fields['modelo'].queryset = Modelo.objects.none()
         else:
-        # 2) Edición: si la instancia Dispositivo tiene modelo, usar su Marca para poblar modelos
             instancia = getattr(self, 'instance', None)
             if getattr(instancia, 'pk', None) and getattr(instancia, 'modelo', None):
                 marca_obj = getattr(instancia.modelo, 'Marca', None)
@@ -180,7 +187,6 @@ class DispositivoForm(forms.ModelForm):
                         self.fields['modelo'].initial = instancia.modelo.id
                     except Exception:
                         pass
-
 
 
 # 🔐 Formulario de login para autenticación de usuarios

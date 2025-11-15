@@ -1,7 +1,7 @@
 // ------------------ JS Unificado (completo y actualizado) ------------------
 document.addEventListener("DOMContentLoaded", () => {
   // ---------- Notificaciones ----------
-  const NOTIF_DURATION_MARCA = 3000;
+  const NOTIF_DURATION = 3000;
   function obtenerContenedorNotificaciones() {
     let cont = document.getElementById("js-notificaciones-global");
     if (!cont) {
@@ -16,11 +16,11 @@ document.addEventListener("DOMContentLoaded", () => {
     }
     return cont;
   }
-  function mostrarNotificacionSuccess(texto, duracion = NOTIF_DURATION_MARCA) {
+  function mostrarNotificacionSuccess(texto, duracion = NOTIF_DURATION) {
     const cont = obtenerContenedorNotificaciones();
     if (Array.from(cont.children).some(n => n.textContent === texto)) return;
     const div = document.createElement("div");
-    div.className = "js-notif";
+    div.className = "js-notif js-notif-success";
     div.textContent = texto;
     div.style.background = "#28a745";
     div.style.color = "#fff";
@@ -42,8 +42,9 @@ document.addEventListener("DOMContentLoaded", () => {
     const cont = obtenerContenedorNotificaciones();
     if (Array.from(cont.children).some(n => n.textContent === texto)) return;
     const div = document.createElement("div");
-    div.className = "js-notif";
+    div.className = "js-notif js-notif-" + tipo;
     div.textContent = texto;
+    // colores: error = rojo, advertencia = amarillo, success aparte
     div.style.background = tipo === "error" ? "#d9534f" : (tipo === "advertencia" ? "#f0ad4e" : "#28a745");
     div.style.color = "#fff";
     div.style.padding = "0.5rem 0.75rem";
@@ -56,7 +57,7 @@ document.addEventListener("DOMContentLoaded", () => {
     div.style.transition = "opacity 220ms ease";
     cont.appendChild(div);
     requestAnimationFrame(() => { div.style.opacity = "1"; });
-    setTimeout(() => { div.style.opacity = "0"; setTimeout(() => div.remove(), 240); }, NOTIF_DURATION_MARCA);
+    setTimeout(() => { div.style.opacity = "0"; setTimeout(() => div.remove(), 240); }, NOTIF_DURATION);
   }
 
   // ---------- Selectores (según tu HTML) ----------
@@ -270,18 +271,43 @@ document.addEventListener("DOMContentLoaded", () => {
     if (!selectEl || !texto) return false;
     const t = String(texto).trim();
     if (!t) return false;
-    const opc = Array.from(selectEl.options).find(o => o.text.trim().toLowerCase() === t.toLowerCase());
-    if (opc) {
-      if (seleccionar) selectEl.value = opc.value;
-      return false; // ya existía
+
+    // Normalizar para comparación
+    const targetNorm = t.toLowerCase();
+
+    // Buscar opciones existentes equivalentes (trim + case-insensitive)
+    const iguales = Array.from(selectEl.options).filter(o => String(o.text || '').trim().toLowerCase() === targetNorm);
+
+    if (iguales.length > 0) {
+      // Si hay al menos una opción equivalente, seleccionar la primera y eliminar duplicados adicionales
+      const primera = iguales[0];
+      if (seleccionar) selectEl.value = primera.value;
+      // eliminar duplicados extra (conservamos la primera encontrada)
+      for (let i = 1; i < iguales.length; i++) {
+        try {
+          selectEl.removeChild(iguales[i]);
+        } catch (err) {
+          const idx = Array.from(selectEl.options).indexOf(iguales[i]);
+          if (idx >= 0) selectEl.remove(idx);
+        }
+      }
+      // Asegurarse que la selección exista en el select (por si value distinto)
+      if (seleccionar) {
+        const hasValue = Array.from(selectEl.options).some(o => o.value === selectEl.value);
+        if (!hasValue) selectEl.value = primera.value;
+      }
+      selectEl.dispatchEvent(new Event("change", { bubbles: true }));
+      return false; // no se creó
     }
+
+    // No existe: crear nueva opción con value igual al texto limpio
     const opt = document.createElement("option");
     opt.value = t;
     opt.textContent = t;
     if (seleccionar) opt.selected = true;
     selectEl.appendChild(opt);
     selectEl.dispatchEvent(new Event("change", { bubbles: true }));
-    return true; // se creó
+    return true; // se creó nueva opción
   }
 
   if (nuevaMarcaInput) {
@@ -293,7 +319,8 @@ document.addEventListener("DOMContentLoaded", () => {
       const valor = (this.value || "").trim();
       if (!valor) { mostrarNotificacion("❌ Ingresa el nombre de la marca antes de agregar", "error"); return; }
       const creado = existeOInsertarOption(marcaSelect, valor, true);
-      mostrarNotificacionSuccess(creado ? "✅ Se agregó marca exitosamente" : "⚠️ La marca ya existe", NOTIF_DURATION_MARCA);
+      if (creado) mostrarNotificacionSuccess("✅ Se agregó marca exitosamente");
+      else mostrarNotificacion("⚠️ La marca ya existe", "advertencia");
       this.value = "";
     });
   }
@@ -306,16 +333,15 @@ document.addEventListener("DOMContentLoaded", () => {
       e.preventDefault();
       const valor = (this.value || "").trim();
       if (!valor) { mostrarNotificacion("❌ Ingresa el nombre del modelo antes de agregar", "error"); return; }
-      // si el select de modelos está ligado a marca, idealmente validar por marca; aquí se evita duplicados globales
       const creado = existeOInsertarOption(modeloSelect, valor, true);
-      mostrarNotificacionSuccess(creado ? "✅ Se agregó modelo exitosamente" : "⚠️ El modelo ya existe", NOTIF_DURATION_MARCA);
+      if (creado) mostrarNotificacionSuccess("✅ Se agregó modelo exitosamente");
+      else mostrarNotificacion("⚠️ El modelo ya existe", "advertencia");
       this.value = "";
     });
   }
 
-  // ---------- Tipo de falla: sin botón, mostrar input y agregar al Enter/click (con notificación) ----------
+  // ---------- Tipo de falla: agregar sin duplicados ----------
   if (tipoFalla) {
-    // mostrar/ocultar campo nueva falla al cambiar selección
     tipoFalla.addEventListener("change", () => {
       const v = tipoFalla.value;
       if (v === "agregar_falla") {
@@ -325,8 +351,6 @@ document.addEventListener("DOMContentLoaded", () => {
         if (campoNuevaFalla) campoNuevaFalla.style.display = "none";
       }
     });
-
-    // si el usuario hace click sobre el select y la opción actual es "agregar_falla", abrir campo
     tipoFalla.addEventListener("click", () => {
       if (tipoFalla.value === "agregar_falla") {
         if (campoNuevaFalla) campoNuevaFalla.style.display = "block";
@@ -336,25 +360,23 @@ document.addEventListener("DOMContentLoaded", () => {
   }
 
   if (nuevaFallaInput && campoNuevaFalla) {
-    // agregar al presionar Enter
     nuevaFallaInput.addEventListener("keydown", (e) => {
       if (e.key !== "Enter") return;
       e.preventDefault();
       const val = (nuevaFallaInput.value || "").trim();
       if (!val) { mostrarNotificacion("❌ Describe la nueva falla antes de agregar", "error"); return; }
       const creado = existeOInsertarOption(tipoFalla, val, true);
-      mostrarNotificacionSuccess(creado ? "✅ Se agregó la nueva falla" : "⚠️ La falla ya existe", NOTIF_DURATION_MARCA);
+      if (creado) mostrarNotificacionSuccess("✅ Se agregó la nueva falla");
+      else mostrarNotificacion("⚠️ La falla ya existe", "advertencia");
       nuevaFallaInput.value = "";
       campoNuevaFalla.style.display = "none";
     });
-
-    // también agregar al blur si hay texto (pequeña demora para evitar conflictos)
     nuevaFallaInput.addEventListener("blur", () => {
       const val = (nuevaFallaInput.value || "").trim();
       if (!val) return;
       setTimeout(() => {
         const creado = existeOInsertarOption(tipoFalla, val, true);
-        if (creado) mostrarNotificacionSuccess("✅ Se agregó la nueva falla", NOTIF_DURATION_MARCA);
+        if (creado) mostrarNotificacionSuccess("✅ Se agregó la nueva falla");
         else {
           const opt = Array.from(tipoFalla.options).find(o => o.text.trim().toLowerCase() === val.toLowerCase());
           if (opt) tipoFalla.value = opt.value;
@@ -365,7 +387,7 @@ document.addEventListener("DOMContentLoaded", () => {
     });
   }
 
-  // ---------- Método de bloqueo: ayuda + validación (PIN/PASS no validados; campo opcional) ----------
+  // ---------- Método de bloqueo: ayuda + validación ----------
   const ayuda = document.createElement("div");
   if (codigoInput && codigoInput.parentNode) { ayuda.className = "form-text"; codigoInput.parentNode.appendChild(ayuda); }
 
@@ -399,14 +421,13 @@ document.addEventListener("DOMContentLoaded", () => {
     const primera = metodoSelect.querySelector('option[value=""]');
     if (primera) primera.disabled = false;
   }
-
   metodoSelect?.addEventListener("change", () => { actualizarAyudaBloqueo(); actualizarGuiaVisual(); });
   codigoInput?.addEventListener("blur", validarCodigoBloqueo);
   function actualizarGuiaVisual() { if (!guiaPatron || !metodoSelect) return; guiaPatron.style.display = metodoSelect.value === "PATRON" ? "block" : "none"; }
   actualizarAyudaBloqueo();
   actualizarGuiaVisual();
 
-  // ---------- Validación de fecha: forzar fecha actual (min/max) y función utilitaria ----------
+  // ---------- Validación de fecha: forzar fecha actual (min/max) y función utilitaria robusta ----------
   (function fijarFechaHoy() {
     const hoy = new Date();
     const yyyy = hoy.getFullYear();
@@ -416,14 +437,23 @@ document.addEventListener("DOMContentLoaded", () => {
     if (fechaOrden) {
       fechaOrden.setAttribute('min', hoyStr);
       fechaOrden.setAttribute('max', hoyStr);
-      if (fechaOrden.value && fechaOrden.value !== hoyStr) fechaOrden.value = hoyStr;
-      else if (!fechaOrden.value) fechaOrden.value = hoyStr;
+      // asegurar formato correcto y valor por defecto hoy
+      if (!fechaOrden.value || fechaOrden.value !== hoyStr) fechaOrden.value = hoyStr;
     }
   })();
 
   function fechaEsHoy(valorFecha) {
     if (!valorFecha) return false;
-    const f = new Date(valorFecha);
+    const raw = String(valorFecha).trim();
+    // Si ya está en formato YYYY-MM-DD, comparar por string local (evita timezone issues)
+    if (/^\d{4}-\d{2}-\d{2}$/.test(raw)) {
+      const hoy = new Date();
+      const hoyStr = `${hoy.getFullYear()}-${String(hoy.getMonth()+1).padStart(2,'0')}-${String(hoy.getDate()).padStart(2,'0')}`;
+      return raw === hoyStr;
+    }
+    // Fallback: parsear y comparar componentes en zona local
+    const f = new Date(raw);
+    if (Number.isNaN(f.getTime())) return false;
     const hoy = new Date();
     return f.getFullYear() === hoy.getFullYear()
       && f.getMonth() === hoy.getMonth()
@@ -433,11 +463,12 @@ document.addEventListener("DOMContentLoaded", () => {
   // ---------- Validación global in submit (ordenada y única) ----------
   if (form) {
     form.addEventListener("submit", function (e) {
+      // limpiar errores visuales previos
       [inputRut, inputPasaporte, nombreInput, apellidoInput, telefonoInput, marcaSelect, modeloSelect, tipoFalla, fechaOrden, costoTotal, abono, codigoInput].forEach(limpiarErrorCampo);
 
       // 1) Identificación (RUT o Pasaporte)
-      const rutVal = inputRut ? (inputRut.value || "").trim() : "";
-      const pasVal = inputPasaporte ? (inputPasaporte.value || "").trim() : "";
+      const rutVal = inputRut ? (String(inputRut.value || "").trim()) : "";
+      const pasVal = inputPasaporte ? (String(inputPasaporte.value || "").trim()) : "";
       if (!((rutVal && formatoRutValido(rutVal)) || (pasVal && formatoPasaporteValido(pasVal)))) {
         e.preventDefault();
         if (rutVal) { mostrarErrorCampo(inputRut, "❌ RUT inválido o formato incorrecto."); inputRut.scrollIntoView({ behavior: "smooth", block: "center" }); inputRut.focus({ preventScroll: true }); }
@@ -468,13 +499,15 @@ document.addEventListener("DOMContentLoaded", () => {
       const tipoVal = tipoFalla ? String(tipoFalla.value || "").trim() : "";
       if (!tipoVal) { e.preventDefault(); mostrarErrorCampo(tipoFalla, "❌ Debes seleccionar un tipo de falla."); tipoFalla.scrollIntoView({ behavior: "smooth", block: "center" }); tipoFalla.focus({ preventScroll: true }); mostrarNotificacion("⚠️ Selecciona el tipo de falla.", "advertencia"); return; }
 
-      // 8) Fecha de ingreso -> debe ser la fecha actual
-      const fechaVal = fechaOrden ? (fechaOrden.value || "").trim() : "";
-      if (!fechaVal || !fechaEsHoy(fechaVal)) {
+      // 8) Fecha de ingreso -> debe ser la fecha actual (lectura directa y trim)
+      const fechaInputEl = document.getElementById('fecha_orden');
+      const fechaRaw = fechaInputEl ? String(fechaInputEl.value || '').trim() : '';
+      console.log('DEBUG validar fecha -> input:', fechaRaw);
+      if (!fechaRaw || !fechaEsHoy(fechaRaw)) {
         e.preventDefault();
-        mostrarErrorCampo(fechaOrden, "❌ La fecha debe ser la fecha actual.");
-        fechaOrden.scrollIntoView({ behavior: "smooth", block: "center" });
-        fechaOrden.focus({ preventScroll: true });
+        mostrarErrorCampo(fechaInputEl, "❌ La fecha debe ser la fecha actual.");
+        fechaInputEl && fechaInputEl.scrollIntoView({ behavior: "smooth", block: "center" });
+        fechaInputEl && fechaInputEl.focus({ preventScroll: true });
         mostrarNotificacion("⚠️ Ingresa la fecha de hoy.", "advertencia");
         return;
       }
