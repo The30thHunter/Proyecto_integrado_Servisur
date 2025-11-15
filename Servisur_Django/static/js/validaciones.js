@@ -265,16 +265,15 @@ document.addEventListener("DOMContentLoaded", () => {
   if (costoTotal) costoTotal.addEventListener("input", () => { limpiarErrorCampo(costoTotal); actualizarRestante(); });
   if (abono) abono.addEventListener("input", () => { limpiarErrorCampo(abono); actualizarRestante(); });
 
-  // ---------- Marca / Modelo: insertar inline y notificar ----------
-  function insertarOpcionEnSelect(selectEl, texto, seleccionar = true) {
-    if (!selectEl || !texto) return;
+  // ---------- Marca / Modelo / Falla: insertar inline evitando duplicados (case-insensitive) ----------
+  function existeOInsertarOption(selectEl, texto, seleccionar = true) {
+    if (!selectEl || !texto) return false;
     const t = String(texto).trim();
-    if (!t) return;
-    const existe = Array.from(selectEl.options).some(o => o.text.trim().toLowerCase() === t.toLowerCase());
-    if (existe) {
-      const opt = Array.from(selectEl.options).find(o => o.text.trim().toLowerCase() === t.toLowerCase());
-      if (opt && seleccionar) selectEl.value = opt.value;
-      return;
+    if (!t) return false;
+    const opc = Array.from(selectEl.options).find(o => o.text.trim().toLowerCase() === t.toLowerCase());
+    if (opc) {
+      if (seleccionar) selectEl.value = opc.value;
+      return false; // ya existía
     }
     const opt = document.createElement("option");
     opt.value = t;
@@ -282,6 +281,7 @@ document.addEventListener("DOMContentLoaded", () => {
     if (seleccionar) opt.selected = true;
     selectEl.appendChild(opt);
     selectEl.dispatchEvent(new Event("change", { bubbles: true }));
+    return true; // se creó
   }
 
   if (nuevaMarcaInput) {
@@ -292,8 +292,9 @@ document.addEventListener("DOMContentLoaded", () => {
       e.preventDefault();
       const valor = (this.value || "").trim();
       if (!valor) { mostrarNotificacion("❌ Ingresa el nombre de la marca antes de agregar", "error"); return; }
-      if (marcaSelect) insertarOpcionEnSelect(marcaSelect, valor, true);
-      mostrarNotificacionSuccess("✅ Se agregó marca exitosamente", NOTIF_DURATION_MARCA);
+      const creado = existeOInsertarOption(marcaSelect, valor, true);
+      mostrarNotificacionSuccess(creado ? "✅ Se agregó marca exitosamente" : "⚠️ La marca ya existe", NOTIF_DURATION_MARCA);
+      this.value = "";
     });
   }
 
@@ -305,8 +306,10 @@ document.addEventListener("DOMContentLoaded", () => {
       e.preventDefault();
       const valor = (this.value || "").trim();
       if (!valor) { mostrarNotificacion("❌ Ingresa el nombre del modelo antes de agregar", "error"); return; }
-      if (modeloSelect) insertarOpcionEnSelect(modeloSelect, valor, true);
-      mostrarNotificacionSuccess("✅ Se agregó modelo exitosamente", NOTIF_DURATION_MARCA);
+      // si el select de modelos está ligado a marca, idealmente validar por marca; aquí se evita duplicados globales
+      const creado = existeOInsertarOption(modeloSelect, valor, true);
+      mostrarNotificacionSuccess(creado ? "✅ Se agregó modelo exitosamente" : "⚠️ El modelo ya existe", NOTIF_DURATION_MARCA);
+      this.value = "";
     });
   }
 
@@ -339,19 +342,8 @@ document.addEventListener("DOMContentLoaded", () => {
       e.preventDefault();
       const val = (nuevaFallaInput.value || "").trim();
       if (!val) { mostrarNotificacion("❌ Describe la nueva falla antes de agregar", "error"); return; }
-      const existe = Array.from(tipoFalla.options).some(o => o.text.trim().toLowerCase() === val.toLowerCase());
-      if (!existe) {
-        const opt = document.createElement("option");
-        opt.value = val;
-        opt.textContent = val;
-        opt.selected = true;
-        tipoFalla.appendChild(opt);
-        tipoFalla.dispatchEvent(new Event("change", { bubbles: true }));
-      } else {
-        const opt = Array.from(tipoFalla.options).find(o => o.text.trim().toLowerCase() === val.toLowerCase());
-        if (opt) tipoFalla.value = opt.value;
-      }
-      mostrarNotificacionSuccess("✅ Se agregó la nueva falla", NOTIF_DURATION_MARCA);
+      const creado = existeOInsertarOption(tipoFalla, val, true);
+      mostrarNotificacionSuccess(creado ? "✅ Se agregó la nueva falla" : "⚠️ La falla ya existe", NOTIF_DURATION_MARCA);
       nuevaFallaInput.value = "";
       campoNuevaFalla.style.display = "none";
     });
@@ -361,16 +353,9 @@ document.addEventListener("DOMContentLoaded", () => {
       const val = (nuevaFallaInput.value || "").trim();
       if (!val) return;
       setTimeout(() => {
-        const existe = Array.from(tipoFalla.options).some(o => o.text.trim().toLowerCase() === val.toLowerCase());
-        if (!existe) {
-          const opt = document.createElement("option");
-          opt.value = val;
-          opt.textContent = val;
-          opt.selected = true;
-          tipoFalla.appendChild(opt);
-          tipoFalla.dispatchEvent(new Event("change", { bubbles: true }));
-          mostrarNotificacionSuccess("✅ Se agregó la nueva falla", NOTIF_DURATION_MARCA);
-        } else {
+        const creado = existeOInsertarOption(tipoFalla, val, true);
+        if (creado) mostrarNotificacionSuccess("✅ Se agregó la nueva falla", NOTIF_DURATION_MARCA);
+        else {
           const opt = Array.from(tipoFalla.options).find(o => o.text.trim().toLowerCase() === val.toLowerCase());
           if (opt) tipoFalla.value = opt.value;
         }
@@ -421,7 +406,31 @@ document.addEventListener("DOMContentLoaded", () => {
   actualizarAyudaBloqueo();
   actualizarGuiaVisual();
 
-  // ---------- Validación global en submit (ordenada y única) ----------
+  // ---------- Validación de fecha: forzar fecha actual (min/max) y función utilitaria ----------
+  (function fijarFechaHoy() {
+    const hoy = new Date();
+    const yyyy = hoy.getFullYear();
+    const mm = String(hoy.getMonth() + 1).padStart(2, '0');
+    const dd = String(hoy.getDate()).padStart(2, '0');
+    const hoyStr = `${yyyy}-${mm}-${dd}`;
+    if (fechaOrden) {
+      fechaOrden.setAttribute('min', hoyStr);
+      fechaOrden.setAttribute('max', hoyStr);
+      if (fechaOrden.value && fechaOrden.value !== hoyStr) fechaOrden.value = hoyStr;
+      else if (!fechaOrden.value) fechaOrden.value = hoyStr;
+    }
+  })();
+
+  function fechaEsHoy(valorFecha) {
+    if (!valorFecha) return false;
+    const f = new Date(valorFecha);
+    const hoy = new Date();
+    return f.getFullYear() === hoy.getFullYear()
+      && f.getMonth() === hoy.getMonth()
+      && f.getDate() === hoy.getDate();
+  }
+
+  // ---------- Validación global in submit (ordenada y única) ----------
   if (form) {
     form.addEventListener("submit", function (e) {
       [inputRut, inputPasaporte, nombreInput, apellidoInput, telefonoInput, marcaSelect, modeloSelect, tipoFalla, fechaOrden, costoTotal, abono, codigoInput].forEach(limpiarErrorCampo);
@@ -459,9 +468,16 @@ document.addEventListener("DOMContentLoaded", () => {
       const tipoVal = tipoFalla ? String(tipoFalla.value || "").trim() : "";
       if (!tipoVal) { e.preventDefault(); mostrarErrorCampo(tipoFalla, "❌ Debes seleccionar un tipo de falla."); tipoFalla.scrollIntoView({ behavior: "smooth", block: "center" }); tipoFalla.focus({ preventScroll: true }); mostrarNotificacion("⚠️ Selecciona el tipo de falla.", "advertencia"); return; }
 
-      // 8) Fecha de ingreso
+      // 8) Fecha de ingreso -> debe ser la fecha actual
       const fechaVal = fechaOrden ? (fechaOrden.value || "").trim() : "";
-      if (!fechaVal) { e.preventDefault(); mostrarErrorCampo(fechaOrden, "❌ Debes indicar la fecha de ingreso."); fechaOrden.scrollIntoView({ behavior: "smooth", block: "center" }); fechaOrden.focus({ preventScroll: true }); mostrarNotificacion("⚠️ Indica la fecha de ingreso.", "advertencia"); return; }
+      if (!fechaVal || !fechaEsHoy(fechaVal)) {
+        e.preventDefault();
+        mostrarErrorCampo(fechaOrden, "❌ La fecha debe ser la fecha actual.");
+        fechaOrden.scrollIntoView({ behavior: "smooth", block: "center" });
+        fechaOrden.focus({ preventScroll: true });
+        mostrarNotificacion("⚠️ Ingresa la fecha de hoy.", "advertencia");
+        return;
+      }
 
       // 9) Costo total
       if (!esNumeroNoNegativo(costoTotal)) { e.preventDefault(); mostrarErrorCampo(costoTotal, "❌ Debes indicar un costo válido (0 o mayor)."); costoTotal.scrollIntoView({ behavior: "smooth", block: "center" }); costoTotal.focus({ preventScroll: true }); mostrarNotificacion("⚠️ Indica el costo total.", "advertencia"); return; }
