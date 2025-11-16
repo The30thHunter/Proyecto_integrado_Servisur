@@ -21,7 +21,7 @@
       <div class="row gx-3">
         <div class="col-lg-3">
           <div class="card mb-3 p-3">
-            <label for="rut" class="form-label">Buscar por RUT</label>
+            <label for="rut" class="form-label">Buscar por Rut / Documento</label>
             <input type="text" name="rut" id="rut" class="form-control" placeholder="Ej: 12345678" value="{{ request.GET.rut|default:'' }}">
           </div>
         </div>
@@ -68,7 +68,7 @@
               <th>Apellido</th>
               <th>N° Orden</th>
               <th>Fecha</th>
-              <th>RUT</th>
+              <th>RUT / DOC</th>
               <th>Marca</th>
               <th>Equipo</th>
               <th>Serie</th>
@@ -96,7 +96,35 @@
                 <td>${{ rep.coste }}</td>
                 <td>${{ rep.abono }}</td>
                 <td>${{ rep.restante }}</td>
-                <td>{{ rep.observaciones }}</td>
+                <td>
+  {% if rep.observaciones %}
+    <button type="button" class="btn btn-sm btn-outline-info" data-bs-toggle="modal" data-bs-target="#modalObs{{ rep.orden_id }}">
+      Ver observación
+    </button>
+
+    <!-- Modal de observación -->
+    <div class="modal fade" id="modalObs{{ rep.orden_id }}" tabindex="-1" aria-hidden="true">
+      <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h5 class="modal-title">Observación de orden {{ rep.numero_orden }}</h5>
+            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+          </div>
+          <div class="modal-body">
+            <p class="text-muted">{{ rep.observaciones }}</p>
+          </div>
+          <div class="modal-footer">
+            <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cerrar</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  {% else %}
+    <span class="text-muted">—</span>
+  {% endif %}
+</td>
+
+
                 <td>{{ rep.estado }}</td>
                 <td>
                   <button type="button" class="btn btn-sm btn-outline-primary btn-open-edit" data-id="{{ rep.orden_id }}">
@@ -146,6 +174,8 @@
 </div>
 
 <script>
+
+
 document.addEventListener('DOMContentLoaded', function(){
   function getCsrfToken() {
     const el = document.querySelector('[name=csrfmiddlewaretoken]');
@@ -219,7 +249,10 @@ document.addEventListener('DOMContentLoaded', function(){
 
           <div class="col-md-4 mb-2"><label class="form-label small">Coste</label><input type="number" name="pedido-Coste" class="form-control" value="${esc(data.pedido.Coste)}"></div>
           <div class="col-md-4 mb-2"><label class="form-label small">Abono</label><input type="number" name="pedido-Abono" class="form-control" value="${esc(data.pedido.Abono)}"></div>
-          <div class="col-md-4 mb-2"><label class="form-label small">Observaciones</label><input name="pedido-Observaciones" class="form-control" value="${esc(data.pedido.Observaciones)}"></div>
+          <div class="col-md-12 mb-2">
+          <label class="form-label small">Observaciones</label>
+          <textarea name="pedido-Observaciones" class="form-control" rows="3">${esc(data.pedido.Observaciones)}</textarea>
+          </div>
         </div>
       `;
 
@@ -247,28 +280,118 @@ document.addEventListener('DOMContentLoaded', function(){
   });
 
   document.getElementById('form-editar-pedido').addEventListener('submit', async function(e){
-    e.preventDefault();
-    const form = e.target;
-    const formData = new FormData(form);
-    const ordenId = formData.get('orden_id');
-    try {
-      const res = await fetch(`/reparacion/${ordenId}/actualizar/`, {
-        method: 'POST',
-        headers: {'X-CSRFToken': getCsrfToken()},
-        body: formData
-      });
-      const data = await res.json();
-      if (res.ok && data.ok) {
-        modal.hide();
-        location.reload();
-      } else {
-        alert(data.error || data.message || 'Error al guardar');
-      }
-    } catch(err){
-      console.error(err);
-      alert('Error de red al guardar la orden.');
+  e.preventDefault();
+  const form = e.target;
+  const formData = new FormData(form);
+
+  // Referencias de inputs
+  const nombre = form.querySelector('[name="cliente-Nombre"]');
+  const rut = form.querySelector('[name="cliente-Rut"]');
+  const tel = form.querySelector('[name="cliente-Numero_telefono"]');
+  const coste = form.querySelector('[name="pedido-Coste"]');
+  const abono = form.querySelector('[name="pedido-Abono"]');
+  const fecha = form.querySelector('[name="pedido-Fecha"]');
+
+  // Helpers
+
+function calcularDv(rutCuerpo){
+  let suma = 0, multiplo = 2;
+  for (let i = rutCuerpo.length - 1; i >= 0; i--) {
+    suma += parseInt(rutCuerpo.charAt(i), 10) * multiplo;
+    multiplo = multiplo === 7 ? 2 : multiplo + 1;
+  }
+  const res = 11 - (suma % 11);
+  return res === 11 ? '0' : (res === 10 ? 'K' : String(res));
+}
+
+function formatoRutValido(rut){
+  if (!rut) return false;
+  const limpio = rut.replace(/\./g,'').replace(/-/g,'');
+  if (!/^\d{2,8}[\dKk]$/.test(limpio)) return false;
+  const cuerpo = limpio.slice(0,-1), dv = limpio.slice(-1).toUpperCase();
+  return calcularDv(cuerpo) === dv;
+}
+
+
+
+  function showInlineError(el, msg) {
+    el.classList.add('is-invalid');
+    let div = el.nextElementSibling;
+    if (!div || !div.classList.contains('invalid-feedback')) {
+      div = document.createElement('div');
+      div.className = 'invalid-feedback';
+      el.insertAdjacentElement('afterend', div);
     }
-  });
+    div.textContent = msg;
+    div.style.display = 'block';
+  }
+  function clearInlineError(el) {
+    el.classList.remove('is-invalid');
+    const div = el.nextElementSibling;
+    if (div && div.classList.contains('invalid-feedback')) div.style.display = 'none';
+  }
+  function empiezaConMayuscula(txt){ return /^[A-ZÁÉÍÓÚÑ]/.test(String(txt).trim()); }
+  function telValido(txt){ return txt.trim()==='' || /^\+569\d{8}$/.test(txt.trim()); }
+  function numNoNegativo(v){ const n = Number(v); return !Number.isNaN(n) && n >= 0; }
+
+  // Limpiar errores previos
+  [nombre, rut, tel, coste, abono, fecha].forEach(clearInlineError);
+
+  // Validaciones
+  if (!nombre.value.trim() || !empiezaConMayuscula(nombre.value)) {
+    showInlineError(nombre, 'El nombre debe iniciar con mayúscula.');
+    nombre.focus(); return;
+  }
+  if (!formatoRutValido(rut.value.trim())) {
+  showInlineError(rut, 'RUT inválido.');
+  rut.focus(); return;
+  }
+  if (!telValido(tel.value)) {
+    showInlineError(tel, 'Formato inválido: +569 seguido de 8 dígitos.');
+    tel.focus(); return;
+  }
+  if (!numNoNegativo(coste.value)) {
+    showInlineError(coste, 'Coste debe ser 0 o mayor.');
+    coste.focus(); return;
+  }
+  if (abono.value.trim() !== '') {
+    const nAbono = Number(abono.value);
+    const nCoste = Number(coste.value || 0);
+    if (Number.isNaN(nAbono) || nAbono < 0) {
+      showInlineError(abono, 'Abono inválido.');
+      abono.focus(); return;
+    }
+    if (nAbono > nCoste) {
+      showInlineError(abono, 'Abono no puede exceder el coste.');
+      abono.focus(); return;
+    }
+  }
+  if (fecha.value.trim() && !/^\d{4}-\d{2}-\d{2}$/.test(fecha.value.trim())) {
+    showInlineError(fecha, 'Fecha inválida (usa YYYY-MM-DD).');
+    fecha.focus(); return;
+  }
+
+  // Enviar si todo está OK
+  const ordenId = formData.get('orden_id');
+  try {
+    const res = await fetch(`/reparacion/${ordenId}/actualizar/`, {
+      method: 'POST',
+      headers: {'X-CSRFToken': getCsrfToken()},
+      body: formData
+    });
+    const data = await res.json();
+    if (res.ok && data.ok) {
+      modal.hide();
+      location.reload();
+    } else {
+      alert(data.error || data.message || 'Error al guardar');
+    }
+  } catch(err){
+    console.error(err);
+    alert('Error de red al guardar la orden.');
+  }
+});
+
 
 });
 </script>
