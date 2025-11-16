@@ -14,6 +14,12 @@ from django.views.decorators.http import require_http_methods
 from django.contrib.auth.decorators import login_required
 from django.db.models import Q
 from .models import Pedido
+import io
+import pandas as pd
+from django.http import HttpResponse
+from django.utils.dateparse import parse_date
+
+
 
 from datetime import datetime
 
@@ -214,8 +220,80 @@ def generar_documento_view(request):
     return render(request, 'base_datos/Generar_documento.html')
 
 # 📊 Vista para generar Excel
+@login_required
 def generar_excel_view(request):
-    return render(request, 'base_datos/Generar_Excel.html')
+    # Capturar parámetros del formulario
+    fecha_inicio = request.GET.get('fecha_inicio', '').strip()
+    fecha_fin = request.GET.get('fecha_fin', '').strip()
+    estado = request.GET.get('estado', '').strip()  # REG / PRO / TER o vacío
+
+    # Si no hay parámetros, mostrar el formulario
+    if not fecha_inicio or not fecha_fin:
+        return render(request, 'base_datos/Generar_Excel.html')
+
+    # Parsear fechas
+    ini = parse_date(fecha_inicio)
+    fin = parse_date(fecha_fin)
+
+    # Validar rango
+    if not ini or not fin or ini > fin:
+        messages.error(request, 'Rango de fechas inválido.')
+        return render(request, 'base_datos/Generar_Excel.html')
+
+    # Query filtrada
+    qs = Pedido.objects.select_related(
+        'Dispositivo__rut',
+        'Dispositivo__modelo__Marca',
+        'Tipo_de_falla'
+    ).filter(Activo=True, Fecha__gte=ini, Fecha__lte=fin)
+
+    if estado:
+        qs = qs.filter(Estado=estado)
+
+    # Construir DataFrame
+    rows = []
+    for p in qs:
+        d = p.Dispositivo
+        c = d.rut if d else None
+        m = d.modelo if d else None
+        marca = m.Marca.Marca if m and m.Marca else ''
+        modelo = m.Modelo if m else ''
+        rows.append({
+            'N_Orden': p.N_Orden,
+            'Fecha': p.Fecha.strftime('%Y-%m-%d') if p.Fecha else '',
+            'Estado': p.get_Estado_display(),
+            'Rut': c.Rut if c else '',
+            'Nombre': c.Nombre if c else '',
+            'Apellido': c.Apellido if c else '',
+            'Telefono': c.Numero_telefono if c else '',
+            'Marca': marca or 'Sin marca',
+            'Modelo': modelo or 'Sin modelo',
+            'Codigo_Bloqueo': d.Codigo_Bloqueo if d else '',
+            'Tipo_de_falla': p.Tipo_de_falla.Falla if p.Tipo_de_falla else '',
+            'Coste': p.Coste,
+            'Abono': p.Abono,
+            'Restante': p.Restante,
+            'Observaciones': p.Observaciones or '',
+            'Activo': p.Activo,
+        })
+
+    df = pd.DataFrame(rows)
+
+    # Generar Excel en memoria
+    buffer = io.BytesIO()
+    with pd.ExcelWriter(buffer, engine='openpyxl') as writer:
+        df.to_excel(writer, sheet_name='Pedidos_filtrados', index=False)
+
+    buffer.seek(0)
+    filename = f"servisur_pedidos_{ini.strftime('%Y%m%d')}_{fin.strftime('%Y%m%d')}{('_'+estado if estado else '')}.xlsx"
+
+    response = HttpResponse(
+        buffer.getvalue(),
+        content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+    )
+    response['Content-Disposition'] = f'attachment; filename="{filename}"'
+    return response
+
 
 # 🔐 Cerrar sesión
 def logout_view(request):

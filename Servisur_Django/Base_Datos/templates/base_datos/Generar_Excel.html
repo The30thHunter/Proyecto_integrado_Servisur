@@ -42,13 +42,12 @@
       <!-- 📦 Sección 2: Filtro opcional por estado -->
       <div class="card p-3 mb-4">
         <h6 class="mb-3">Filtrar por estado (opcional)</h6>
-        <select name="estado" class="form-select">
-          <option value="">Todos los estados</option>
-          <option value="pendiente">Pendiente</option>
-          <option value="en_proceso">En proceso</option>
-          <option value="completado">Completado</option>
-          <option value="entregado">Entregado</option>
-        </select>
+          <select name="estado" class="form-select">
+            <option value="">Todos los estados</option>
+            <option value="REG">Registrado</option>
+            <option value="PRO">En proceso</option>
+            <option value="TER">Terminado</option>
+</select>
       </div>
 
       <!-- 🔘 Botón generar -->
@@ -68,5 +67,27 @@
   </footer>
 </div>
 
-<script src="{% static 'js/generar_excel.js' %}"></script>
+<script src="{% static 'js/generar_excel.js' %}">
+
+<script>
+document.addEventListener('DOMContentLoaded', function(){
+  const form = document.querySelector('form[action$="generar_excel"]');
+  if (!form) return;
+  const fi = document.getElementById('fecha_inicio');
+  const ff = document.getElementById('fecha_fin');
+
+  form.addEventListener('submit', function(e){
+    const vi = fi.value.trim();
+    const vf = ff.value.trim();
+    if (!vi || !vf) return; // el backend ya valida
+    if (vi > vf) {
+      e.preventDefault();
+      alert('La fecha inicio no puede ser mayor que la fecha fin.');
+    }
+  });
+});
+</script>
+
+
+</script>
 {% endblock %}
