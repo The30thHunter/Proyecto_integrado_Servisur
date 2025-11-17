@@ -724,3 +724,16 @@ footer {
   border-color: rgba(220,53,69,0.08);
   box-shadow: 0 6px 18px rgba(220,53,69,0.06);
 }
+
+
+.link-negro {
+  color: black !important;       /* fuerza el color negro */
+  text-decoration: none !important; /* quita subrayado */
+}
+
+.link-negro:hover,
+.link-negro:visited,
+.link-negro:active {
+  color: black !important;       /* mantiene negro en todos los estados */
+  text-decoration: none !important;
+}
