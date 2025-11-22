@@ -142,7 +142,7 @@ class Pedido(models.Model):
     Dispositivo = models.ForeignKey(Dispositivo, on_delete=models.SET_NULL, null=True, related_name="pedidos")
     Activo = models.BooleanField(default=True)
     Estado = models.CharField(max_length=3, choices=ESTADOS, default='REG')
-    Observaciones = models.CharField(max_length=50, null=True, blank=True)
+    Observaciones = models.TextField(blank=True, null=True)
     Tipo_de_falla = models.ForeignKey(Tipo_Falla, on_delete=models.SET_NULL, null=True, related_name="pedidos")
 
     class Meta:

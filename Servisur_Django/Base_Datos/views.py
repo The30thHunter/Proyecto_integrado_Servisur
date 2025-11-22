@@ -49,92 +49,125 @@ def main_view(request):
 
 
 
+from django.utils import timezone
+from django.contrib import messages
+from django.shortcuts import render, redirect
+from django.db import transaction
+
+from .models import Cliente, Pedido, Marca, Modelo, Dispositivo, Tipo_Falla
+
+# Helpers de parsing seguro
+def parse_int_safe(value, default=0):
+    try:
+        v = (value or "").strip()
+        return int(v) if v != "" else default
+    except (ValueError, TypeError):
+        return default
+
+def parse_id_safe(value):
+    try:
+        v = (value or "").strip()
+        return int(v) if v.isdigit() else None
+    except Exception:
+        return None
+
 def registrar_reparacion(request):
     if request.method == 'POST':
-        # 🧍 Cliente
-        origen = request.POST.get('Origen')
-        nombre = request.POST.get('Nombre') or request.POST.get('cliente-Nombre')
-        apellido = request.POST.get('Apellido') or request.POST.get('cliente-Apellido')
-        telefono = request.POST.get('Numero_telefono') or request.POST.get('cliente-Numero_telefono')
-        rut = request.POST.get('Rut') or request.POST.get('cliente-Rut')
-        dni = request.POST.get('DocumentoExtranjero') or request.POST.get('cliente-Pasaporte')
+        try:
+            with transaction.atomic():
+                # 🧍 Cliente
+                origen = request.POST.get('Origen')
+                nombre = request.POST.get('Nombre') or request.POST.get('cliente-Nombre') or ''
+                apellido = request.POST.get('Apellido') or request.POST.get('cliente-Apellido') or ''
+                telefono = request.POST.get('Numero_telefono') or request.POST.get('cliente-Numero_telefono') or ''
+                rut = request.POST.get('Rut') or request.POST.get('cliente-Rut') or ''
+                dni = request.POST.get('DocumentoExtranjero') or request.POST.get('cliente-Pasaporte') or ''
 
-        # Buscar cliente por RUT o DNI
-        cliente = None
-        if origen == 'NAC' and rut:
-            cliente = Cliente.objects.filter(Rut=rut).first()
-        elif origen == 'EXT' and dni:
-            cliente = Cliente.objects.filter(DocumentoExtranjero=dni).first()
+                # Buscar cliente por RUT o DNI
+                cliente = None
+                if origen == 'NAC' and rut:
+                    cliente = Cliente.objects.filter(Rut=rut).first()
+                elif origen == 'EXT' and dni:
+                    cliente = Cliente.objects.filter(DocumentoExtranjero=dni).first()
 
-        # Si no existe, lo creamos
-        if not cliente:
-            cliente = Cliente.objects.create(
-                Origen=origen,
-                Nombre=nombre,
-                Apellido=apellido,
-                Numero_telefono=telefono,
-                Rut=rut if origen == 'NAC' else None,
-                DocumentoExtranjero=dni if origen == 'EXT' else None,
-                Activo=True
-            )
+                # Si no existe, crear
+                if not cliente:
+                    cliente = Cliente.objects.create(
+                        Origen=origen or 'NAC',
+                        Nombre=nombre,
+                        Apellido=apellido,
+                        Numero_telefono=telefono,
+                        Rut=rut if (origen == 'NAC') else None,
+                        DocumentoExtranjero=dni if (origen == 'EXT') else None,
+                        Activo=True
+                    )
 
+                # 🏷️ Marca y Modelo
+                marca_id_raw = request.POST.get('dispositivo-Marca')
+                nueva_marca = (request.POST.get('nueva_marca') or '').strip()
+                nuevo_modelo = (request.POST.get('nuevo_modelo') or '').strip()
 
-        # 🏷️ Marca y Modelo
-        marca_id = request.POST.get('dispositivo-Marca')
-        nueva_marca = request.POST.get('nueva_marca')
-        nuevo_modelo = request.POST.get('nuevo_modelo')
+                if marca_id_raw == 'agregar_marca' and nueva_marca:
+                    marca = Marca.objects.create(Marca=nueva_marca)
+                else:
+                    marca_id = parse_id_safe(marca_id_raw)
+                    marca = Marca.objects.filter(id=marca_id).first() if marca_id else None
 
-        if marca_id == 'agregar_marca' and nueva_marca:
-            marca = Marca.objects.create(Marca=nueva_marca)
-        else:
-            marca = Marca.objects.filter(id=marca_id).first()
+                modelo = None
+                if nuevo_modelo and marca:
+                    modelo, _ = Modelo.objects.get_or_create(Modelo=nuevo_modelo, Marca=marca)
+                else:
+                    modelo_id = parse_id_safe(request.POST.get('dispositivo-modelo'))
+                    modelo = Modelo.objects.filter(id=modelo_id).first() if modelo_id else None
 
-        modelo = None
-        if nuevo_modelo:
-            modelo, _ = Modelo.objects.get_or_create(Modelo=nuevo_modelo, Marca=marca)
-        else:
-            modelo_id = request.POST.get('dispositivo-modelo')
-            modelo = Modelo.objects.filter(id=modelo_id).first()
+                # 💻 Dispositivo
+                codigo_bloqueo = (request.POST.get('dispositivo-Codigo_Bloqueo') or '').strip()
+                metodo_bloqueo = (request.POST.get('dispositivo-Metodo_Bloqueo') or '').strip() or 'PASS'
+                dispositivo = Dispositivo.objects.create(
+                    modelo=modelo,
+                    rut=cliente,
+                    Codigo_Bloqueo=codigo_bloqueo,
+                    Metodo_Bloqueo=metodo_bloqueo,
+                    Activo=True
+                )
 
-        # 💻 Dispositivo
-        codigo_bloqueo = request.POST.get('dispositivo-Codigo_Bloqueo')
-        dispositivo = Dispositivo.objects.create(
-            modelo=modelo,
-            rut=cliente,
-            Codigo_Bloqueo=codigo_bloqueo,
-            Activo=True
-        )
+                # ⚠️ Tipo de falla
+                falla_texto = (request.POST.get('dispositivo-Tipo_Falla') or '').strip()
+                tipo_falla = None
+                if falla_texto:
+                    tipo_falla, _ = Tipo_Falla.objects.get_or_create(Falla=falla_texto)
 
-        # ⚠️ Tipo de falla
-        falla_texto = request.POST.get('dispositivo-Tipo_Falla')
-        tipo_falla, _ = Tipo_Falla.objects.get_or_create(Falla=falla_texto)
-        
+                # 📋 Pedido (usar fecha local del servidor)
+                coste = parse_int_safe(request.POST.get('pedido-Coste'), default=0)
+                abono = parse_int_safe(request.POST.get('pedido-Abono'), default=0)
+                restante = max(0, coste - abono)
+                observaciones = (request.POST.get('pedido-Observaciones') or '').strip()
 
-        # 📋 Pedido
-        fecha = request.POST.get('pedido-Fecha')
-        coste = int(request.POST.get('pedido-Coste', 0))
-        abono = int(request.POST.get('pedido-Abono', 0))
-        restante = coste - abono
+                Pedido.objects.create(
+                    Fecha=timezone.localdate(),  # evita desfases por TZ y cumple clean()
+                    Coste=coste,
+                    Abono=abono,
+                    Restante=restante,
+                    Dispositivo=dispositivo,
+                    Estado='REG',
+                    Tipo_de_falla=tipo_falla,
+                    Observaciones=observaciones,
+                    Activo=True
+                )
 
-        Pedido.objects.create(
-            Fecha=fecha,
-            Coste=coste,
-            Abono=abono,
-            Restante=restante,
-            Dispositivo=dispositivo,
-            Estado='REG',
-            Tipo_de_falla=tipo_falla,
-            Activo=True
-        )
+            messages.success(request, "Reparación registrada correctamente.")
+            return redirect('registrar_reparacion')
 
-        messages.success(request, "Reparación registrada correctamente.")
-        return redirect('registrar_reparacion')
+        except Exception as e:
+            messages.error(request, f"Ocurrió un error al registrar: {e}")
+            # continúa hacia el render con contexto para mostrar el mensaje
 
     # GET: preparar marcas para el formulario
     marcas = Marca.objects.all()
     return render(request, 'base_datos/registrar_reparacion.html', {
         'dispositivo_form': {'fields': {'Marca': {'queryset': marcas}}},
     })
+
 
 
 
@@ -318,7 +351,7 @@ def login_view(request):
 
     return render(request, 'login.html', {'form': form, 'error_message': error_message})
 
-# 📋 Historial de reparaciones
+
 # 📋 Historial de reparaciones
 @login_required
 def consultar_historial(request):
