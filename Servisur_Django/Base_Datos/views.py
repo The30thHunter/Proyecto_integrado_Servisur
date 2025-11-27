@@ -1,60 +1,56 @@
-from django.shortcuts import render, redirect
+from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth import authenticate, login, logout
 from django.contrib.auth.models import User
 from django.utils import timezone
-from django.db import transaction
+from django.db import transaction, models
 from django.contrib import messages
-from django.http import JsonResponse
+from django.http import JsonResponse, HttpResponse, HttpResponseBadRequest
 from django.views.decorators.csrf import csrf_exempt
-from django.db import models
-from django.shortcuts import render, redirect, get_object_or_404
-from django.contrib.auth.decorators import login_required
 from django.views.decorators.http import require_http_methods
-from django.contrib.auth.decorators import login_required
 from django.db.models import Q
-from .models import Pedido
+from django.utils.dateparse import parse_date
 import io
 import pandas as pd
-from django.http import HttpResponse
-from django.utils.dateparse import parse_date
-
-
-
 from datetime import datetime
 
-
+from .decoradores import solo_administrador, solo_operador, solo_reparador
 from .models import (
-    Cliente, Pedido, Marca, Modelo, Dispositivo,Tipo_Falla
+    Cliente, Pedido, Marca, Modelo, Dispositivo, Tipo_Falla
 )
 from .formulario import LoginForm, ClienteForm, DispositivoForm, PedidoForm
 
-# 🏠 Vista principal del panel
-@login_required
+
+# 🏠 Vista principal del panel (requiere login)
+from django.shortcuts import render, redirect
+from django.utils import timezone
+
 def main_view(request):
+    if not request.user.is_authenticated:
+        return redirect('login')   # debe existir url name='login'
+
     opening_hour = "09:00"
     closing_hour = "19:30"
     hoy = timezone.localtime(timezone.now()).date()
     fecha_formateada = hoy.strftime("%d/%m/%Y")
 
-    nombre_usuario = request.user.get_full_name() or request.user.username
+    usuario_activo = request.user.get_full_name() or request.user.username
+    grupo_actual = (
+        "Administrador" if (request.user.is_superuser or request.user.groups.filter(name='Administrador').exists())
+        else (request.user.groups.first().name if request.user.groups.exists() else "Sin grupo")
+    )
 
     context = {
         "fecha_hoy": fecha_formateada,
         "horario_apertura": opening_hour,
         "horario_cierre": closing_hour,
-        "usuario_activo": nombre_usuario,
+        "usuario_activo": usuario_activo,
+        "grupo_actual": grupo_actual,
     }
     return render(request, "base_datos/main.html", context)
 
 
 
-from django.utils import timezone
-from django.contrib import messages
-from django.shortcuts import render, redirect
-from django.db import transaction
-
-from .models import Cliente, Pedido, Marca, Modelo, Dispositivo, Tipo_Falla
 
 # Helpers de parsing seguro
 def parse_int_safe(value, default=0):
@@ -70,7 +66,20 @@ def parse_id_safe(value):
         return int(v) if v.isdigit() else None
     except Exception:
         return None
+    
+from django.contrib.auth import logout
+from django.shortcuts import redirect
+from django.views.decorators.http import require_POST
 
+@require_POST
+def logout_view(request):
+    logout(request)
+    return redirect('login')
+
+
+
+# 📝 Registro de reparaciones (Operador Técnico y Administrador)
+@solo_operador
 def registrar_reparacion(request):
     if request.method == 'POST':
         try:
@@ -83,14 +92,12 @@ def registrar_reparacion(request):
                 rut = request.POST.get('Rut') or request.POST.get('cliente-Rut') or ''
                 dni = request.POST.get('DocumentoExtranjero') or request.POST.get('cliente-Pasaporte') or ''
 
-                # Buscar cliente por RUT o DNI
                 cliente = None
                 if origen == 'NAC' and rut:
                     cliente = Cliente.objects.filter(Rut=rut).first()
                 elif origen == 'EXT' and dni:
                     cliente = Cliente.objects.filter(DocumentoExtranjero=dni).first()
 
-                # Si no existe, crear
                 if not cliente:
                     cliente = Cliente.objects.create(
                         Origen=origen or 'NAC',
@@ -144,7 +151,7 @@ def registrar_reparacion(request):
                 observaciones = (request.POST.get('pedido-Observaciones') or '').strip()
 
                 Pedido.objects.create(
-                    Fecha=timezone.localdate(),  # evita desfases por TZ y cumple clean()
+                    Fecha=timezone.localdate(),  # evita desfases por TZ
                     Coste=coste,
                     Abono=abono,
                     Restante=restante,
@@ -160,7 +167,6 @@ def registrar_reparacion(request):
 
         except Exception as e:
             messages.error(request, f"Ocurrió un error al registrar: {e}")
-            # continúa hacia el render con contexto para mostrar el mensaje
 
     # GET: preparar marcas para el formulario
     marcas = Marca.objects.all()
@@ -169,29 +175,46 @@ def registrar_reparacion(request):
     })
 
 
-
-
-@login_required
+# Gestionar reparaciones (Estado y visualización)
 @require_http_methods(["GET", "POST"])
+@login_required
 def estado_reparacion_view(request):
-    # POST: actualizar estado de una orden
+    u = request.user
+
+    # Bloqueo de permisos
+    if u.groups.filter(name='Operador Técnico').exists() and not (u.is_superuser or u.groups.filter(name='Administrador').exists()):
+        messages.error(request, "No tienes permisos para gestionar reparaciones.")
+        return redirect('main')
+
+    if not (u.is_superuser or u.groups.filter(name__in=['Administrador', 'Técnico de Taller']).exists()):
+        messages.error(request, "No tienes permisos suficientes para acceder aquí.")
+        return redirect('main')
+
     if request.method == "POST":
         orden_id = request.POST.get("orden_id")
         nuevo_estado = request.POST.get("nuevo_estado")
-        if orden_id and nuevo_estado:
-            pedido = get_object_or_404(Pedido, pk=orden_id)
-            valid_choices = [c[0] for c in Pedido.ESTADOS]
-            if nuevo_estado in valid_choices:
-                pedido.Estado = nuevo_estado
-                pedido.save()
-                messages.success(request, f"Estado de orden {pedido.N_Orden} actualizado.")
-            else:
-                messages.error(request, "Estado inválido.")
-        else:
+        if not orden_id or not nuevo_estado:
             messages.error(request, "Datos incompletos para actualización.")
+            return redirect('estado_reparacion')
+
+        # Validar estado permitido
+        valid_choices = [c[0] for c in Pedido.ESTADOS]
+        if nuevo_estado not in valid_choices:
+            messages.error(request, "Estado inválido.")
+            return redirect('estado_reparacion')
+
+        # Técnico de Taller: solo actualizar estado
+        if u.groups.filter(name='Técnico de Taller').exists() and not (u.is_superuser or u.groups.filter(name='Administrador').exists()):
+            Pedido.objects.filter(pk=orden_id).update(Estado=nuevo_estado)  # ✅ sin full_clean()
+            messages.success(request, f"Orden {orden_id} actualizada a {nuevo_estado}.")
+            return redirect('estado_reparacion')
+
+        # Administrador / superuser: también usar update para evitar validaciones de fecha
+        Pedido.objects.filter(pk=orden_id).update(Estado=nuevo_estado)  # ✅ sin full_clean()
+        messages.success(request, f"Estado de orden {orden_id} actualizado.")
         return redirect('estado_reparacion')
 
-    # GET: aplicar filtros
+    # GET: filtros (sin cambios)
     qs = Pedido.objects.select_related('Dispositivo__rut', 'Dispositivo__modelo__Marca').filter(Activo=True)
 
     orden = request.GET.get('orden', '').strip()
@@ -201,10 +224,7 @@ def estado_reparacion_view(request):
     estado = request.GET.get('estado', '').strip()
 
     if orden:
-        if orden.isdigit():
-            qs = qs.filter(N_Orden=int(orden))
-        else:
-            qs = qs.filter(N_Orden__icontains=orden)
+        qs = qs.filter(N_Orden=int(orden)) if orden.isdigit() else qs.filter(N_Orden__icontains=orden)
 
     if fecha:
         parsed = None
@@ -215,17 +235,13 @@ def estado_reparacion_view(request):
                 parsed = datetime.strptime(fecha, "%d/%m/%Y").date()
             except Exception:
                 parsed = None
-        if parsed:
-            qs = qs.filter(Fecha=parsed)
-        else:
-            qs = qs.filter(Fecha__icontains=fecha)
+        qs = qs.filter(Fecha=parsed) if parsed else qs.filter(Fecha__icontains=fecha)
 
     if doc:
         qs = qs.filter(
             models.Q(Dispositivo__rut__Rut__icontains=doc) |
             models.Q(Dispositivo__rut__DocumentoExtranjero__icontains=doc)
         )
-
 
     if nombre:
         qs = qs.filter(
@@ -246,14 +262,14 @@ def estado_reparacion_view(request):
     return render(request, 'base_datos/Estado_reparacion.html', context)
 
 
-
-
 # 📄 Vista para generar documento
+@login_required
 def generar_documento_view(request):
     return render(request, 'base_datos/Generar_documento.html')
 
-# 📊 Vista para generar Excel
-@login_required
+
+# 📊 Generar Excel (solo Administrador)
+@solo_administrador
 def generar_excel_view(request):
     # Capturar parámetros del formulario
     fecha_inicio = request.GET.get('fecha_inicio', '').strip()
@@ -333,6 +349,7 @@ def logout_view(request):
     logout(request)
     return redirect('main')
 
+
 # 🔐 Login con mensajes personalizados
 def login_view(request):
     form = LoginForm(request.POST or None)
@@ -352,7 +369,7 @@ def login_view(request):
     return render(request, 'login.html', {'form': form, 'error_message': error_message})
 
 
-# 📋 Historial de reparaciones
+# 📋 Historial de reparaciones (requiere login)
 @login_required
 def consultar_historial(request):
     rut = request.GET.get('rut', '').strip()
@@ -386,7 +403,6 @@ def consultar_historial(request):
 
     if fecha:
         try:
-            from datetime import datetime
             parsed = datetime.strptime(fecha, "%Y-%m-%d").date()
             qs = qs.filter(Fecha=parsed)
         except Exception:
@@ -427,27 +443,21 @@ def consultar_historial(request):
     }
     return render(request, 'base_datos/Consultar_historial.html', context)
 
+
 # 🔄 Obtener modelos según marca (AJAX)
 def obtener_modelos_por_marca(request):
     marca_id = request.GET.get('marca_id')
     modelos = Modelo.objects.filter(Marca_id=marca_id).values('id', 'Modelo')
     return JsonResponse(list(modelos), safe=False)
 
-# 🔄 Obtener tipos de falla (AJAX)
-from django.http import JsonResponse
-from .models import Tipo_Falla
 
+# 🔄 Obtener tipos de falla (AJAX)
 def obtener_tipos_falla(request):
     tipos = list(Tipo_Falla.objects.all().order_by("Falla").values("id", "Falla"))
     return JsonResponse(tipos, safe=False)
 
 
 # ➕ Agregar nuevo modelo (AJAX)
-from .models import Modelo, Marca
-from django.views.decorators.csrf import csrf_exempt
-from django.http import JsonResponse
-
-@csrf_exempt
 @csrf_exempt
 def agregar_modelo_ajax(request):
     if request.method == "POST":
@@ -464,39 +474,28 @@ def agregar_modelo_ajax(request):
         modelo, creado = Modelo.objects.get_or_create(Modelo=nombre, Marca=marca)
         return JsonResponse({"id": modelo.id, "nombre": modelo.Modelo})
 
+    return JsonResponse({"error": "Método no permitido"}, status=405)
 
 
-
-from .models import Marca
-from django.views.decorators.csrf import csrf_exempt
-from django.http import JsonResponse
-
+# ➕ Agregar nueva marca (AJAX)
 @csrf_exempt
 def agregar_marca_ajax(request):
     if request.method == "POST":
         try:
             nombre = request.POST.get("nombre", "").strip()
-            print("📥 Nombre recibido:", nombre)
-
             if not nombre:
                 return JsonResponse({"error": "Nombre vacío"}, status=400)
 
             marca, creada = Marca.objects.get_or_create(Marca=nombre)
-            print("✅ Marca creada:", marca.id, marca.Marca)
-
             return JsonResponse({"id": marca.id, "nombre": marca.Marca})
-        except Exception as e:
-            print("❌ Error interno en agregar_marca_ajax:", str(e))
+        except Exception:
             return JsonResponse({"error": "Error interno del servidor"}, status=500)
 
     return JsonResponse({"error": "Método no permitido"}, status=405)
 
 
-from django.http import JsonResponse
-from .models import Tipo_Falla
-
-@csrf_exempt
 # ✅ Agregar nueva falla (AJAX)
+@csrf_exempt
 def agregar_falla_ajax(request):
     if request.method == "POST":
         texto = request.POST.get("falla", "").strip()
@@ -513,6 +512,7 @@ def agregar_falla_ajax(request):
     return JsonResponse({"error": "Método no permitido."}, status=405)
 
 
+# ✏️ Editar reparación (requiere login; si quieres restringir: usa decorador según perfil)
 @login_required
 def editar_reparacion_view(request, orden_id):
     pedido = get_object_or_404(Pedido, pk=orden_id)
@@ -530,19 +530,15 @@ def editar_reparacion_view(request, orden_id):
         if cliente_form.is_valid() and dispositivo_form.is_valid() and pedido_form.is_valid():
             try:
                 with transaction.atomic():
-                    # guardar cliente primero
                     cliente = cliente_form.save()
 
-                    # dispositivo (no guardar aún)
                     dispositivo = dispositivo_form.save(commit=False)
                     dispositivo.rut = cliente
 
-                    # leer marca/modelo desde POST (prefijo 'dispositivo-')
                     marca_raw = request.POST.get('dispositivo-Marca') or request.POST.get('Marca')
                     modelo_raw = request.POST.get('dispositivo-modelo') or request.POST.get('modelo')
                     nuevo_modelo_nombre = request.POST.get('nuevo_modelo', '').strip()
 
-                    # resolver marca
                     marca = None
                     if marca_raw == 'agregar_marca':
                         nueva_marca = request.POST.get('nueva_marca', '').strip()
@@ -554,28 +550,21 @@ def editar_reparacion_view(request, orden_id):
                         except (ValueError, TypeError):
                             marca = None
 
-                    # resolver/crear modelo y asignarlo
                     if modelo_raw == 'agregar_nuevo' and nuevo_modelo_nombre and marca:
                         modelo_existente = Modelo.objects.filter(Modelo__iexact=nuevo_modelo_nombre, Marca=marca).first()
-                        if modelo_existente:
-                            dispositivo.modelo = modelo_existente
-                        else:
-                            dispositivo.modelo = Modelo.objects.create(Modelo=nuevo_modelo_nombre, Marca=marca)
+                        dispositivo.modelo = modelo_existente or Modelo.objects.create(Modelo=nuevo_modelo_nombre, Marca=marca)
                     elif modelo_raw:
                         try:
                             dispositivo.modelo_id = int(modelo_raw)
                         except (TypeError, ValueError):
                             pass
-                    # si no viene modelo, se mantiene el actual
 
                     dispositivo.save()
 
-                    # tipo de falla (aceptar texto libre)
                     if tipo_falla_text:
                         tipo_falla_obj, _ = Tipo_Falla.objects.get_or_create(Falla=tipo_falla_text)
                         pedido.Tipo_de_falla = tipo_falla_obj
 
-                    # pedido: guardar y recalcular restante
                     pedido = pedido_form.save(commit=False)
                     pedido.Dispositivo = dispositivo
                     pedido.Observaciones = observaciones
@@ -602,22 +591,15 @@ def editar_reparacion_view(request, orden_id):
     return render(request, "base_datos/editar_reparacion.html", context)
 
 
-from django.http import JsonResponse, HttpResponseBadRequest
-from django.views.decorators.http import require_http_methods
-
+# 🔄 Datos JSON para modal de edición (requiere login)
 @login_required
 def pedido_json_view(request, orden_id):
-    """
-    Devuelve JSON con los datos básicos de la orden, cliente y dispositivo
-    para poblar el modal de edición.
-    """
     pedido = get_object_or_404(Pedido.objects.select_related('Dispositivo__modelo__Marca','Tipo_de_falla','Dispositivo__rut'), pk=orden_id)
     dispositivo = pedido.Dispositivo
     cliente = dispositivo.rut if dispositivo else None
     modelo_id = dispositivo.modelo.id if dispositivo and dispositivo.modelo else None
     marca_id = dispositivo.modelo.Marca.id if dispositivo and dispositivo.modelo and dispositivo.modelo.Marca else None
 
-    # modelos disponibles para la marca (para llenar el select modelo)
     modelos = []
     if marca_id:
         modelos = list(Modelo.objects.filter(Marca_id=marca_id).values('id','Modelo'))
@@ -648,105 +630,35 @@ def pedido_json_view(request, orden_id):
             'Metodo_Bloqueo': dispositivo.Metodo_Bloqueo if dispositivo else ''
         },
         'modelos_de_marca': modelos,
-        # opcional: lista de marcas para poblar select de marca
         'marcas': list(Marca.objects.all().values('id','Marca')),
     }
     return JsonResponse(data)
 
 
-@login_required
+# 🔧 Actualizar estado de pedido (solo Técnico de Taller y Administrador)
+@solo_reparador
 @require_http_methods(["POST"])
 def pedido_actualizar_view(request, orden_id):
-    """
-    Recibe POST (AJAX). Valida datos mínimos y actualiza Cliente, Dispositivo y Pedido.
-    Retorna JSON con éxito/error y mensajes.
-    """
-    try:
-        pedido = get_object_or_404(Pedido, pk=orden_id)
-        dispositivo = pedido.Dispositivo
-        cliente = dispositivo.rut if dispositivo else None
+    pedido = get_object_or_404(Pedido, pk=orden_id)
+    nuevo_estado = request.POST.get("nuevo_estado", "").strip()
 
-        # leer datos enviados (esperamos application/x-www-form-urlencoded)
-        nombre = request.POST.get('cliente-Nombre', '').strip()
-        apellido = request.POST.get('cliente-Apellido', '').strip()
-        rut = request.POST.get('cliente-Rut', '').strip()
-        telefono = request.POST.get('cliente-Numero_telefono', '').strip()
+    valid_choices = [c[0] for c in Pedido.ESTADOS]
+    if nuevo_estado not in valid_choices:
+        return JsonResponse({'ok': False, 'error': 'Estado inválido'}, status=400)
 
-        marca_id = request.POST.get('dispositivo-Marca') or None
-        modelo_id = request.POST.get('dispositivo-modelo') or None
-        codigo_bloqueo = request.POST.get('dispositivo-Codigo_Bloqueo', '').strip()
-        metodo_bloqueo = request.POST.get('dispositivo-Metodo_Bloqueo', '').strip()
+    # Si es Técnico de Taller, opcionalmente permitir solo TER
+    if request.user.groups.filter(name='Técnico de Taller').exists() and not (request.user.is_superuser or request.user.groups.filter(name='Administrador').exists()):
+        # Descomenta si quieres forzar solo TER:
+        # if nuevo_estado != 'TER':
+        #     return JsonResponse({'ok': False, 'error': "Solo puedes marcar como 'Terminado'."}, status=403)
+        pedido.Estado = nuevo_estado
+        pedido.save()
+        return JsonResponse({'ok': True, 'message': f'Orden {pedido.N_Orden} actualizada a {nuevo_estado}.'})
 
-        tipo_falla_text = (request.POST.get('dispositivo-Tipo_Falla') or request.POST.get('nueva_falla') or '').strip()
+    # Administrador / superuser
+    pedido.Estado = nuevo_estado
+    pedido.save()
+    return JsonResponse({'ok': True, 'message': f'Estado de orden {pedido.N_Orden} actualizado.'})
 
-        fecha = request.POST.get('pedido-Fecha') or None
-        try:
-            coste = int(request.POST.get('pedido-Coste') or 0)
-        except ValueError:
-            return JsonResponse({'ok': False, 'error': 'Coste inválido'}, status=400)
-        try:
-            abono = int(request.POST.get('pedido-Abono') or 0)
-        except ValueError:
-            return JsonResponse({'ok': False, 'error': 'Abono inválido'}, status=400)
-        observaciones = request.POST.get('pedido-Observaciones', '').strip()
 
-        # validaciones básicas
-        if not rut:
-            return JsonResponse({'ok': False, 'error': 'Rut vacío'}, status=400)
-        if not nombre:
-            return JsonResponse({'ok': False, 'error': 'Nombre vacío'}, status=400)
-
-        with transaction.atomic():
-            # actualizar cliente
-            if cliente:
-                cliente.Nombre = nombre
-                cliente.Apellido = apellido
-                cliente.Rut = rut
-                cliente.Numero_telefono = telefono
-                cliente.save()
-            else:
-                cliente = Cliente.objects.create(Nombre=nombre, Apellido=apellido, Rut=rut, Numero_telefono=telefono, Activo=True)
-
-            # resolver/actualizar marca y modelo
-            marca_obj = None
-            modelo_obj = None
-            if marca_id and marca_id not in ('', 'agregar_marca'):
-                try:
-                    marca_obj = Marca.objects.filter(id=int(marca_id)).first()
-                except Exception:
-                    marca_obj = None
-
-            if modelo_id and modelo_id not in ('', 'agregar_nuevo'):
-                try:
-                    modelo_obj = Modelo.objects.filter(id=int(modelo_id)).first()
-                except Exception:
-                    modelo_obj = None
-
-            # asignar al dispositivo
-            if dispositivo is None:
-                dispositivo = Dispositivo.objects.create(modelo=modelo_obj, rut=cliente, Codigo_Bloqueo=codigo_bloqueo, Metodo_Bloqueo=metodo_bloqueo, Activo=True)
-            else:
-                dispositivo.modelo = modelo_obj
-                dispositivo.rut = cliente
-                dispositivo.Codigo_Bloqueo = codigo_bloqueo
-                dispositivo.Metodo_Bloqueo = metodo_bloqueo
-                dispositivo.save()
-
-            # tipo de falla
-            if tipo_falla_text:
-                tipo_obj, _ = Tipo_Falla.objects.get_or_create(Falla=tipo_falla_text)
-                pedido.Tipo_de_falla = tipo_obj
-
-            # pedido
-            pedido.Fecha = fecha or pedido.Fecha
-            pedido.Coste = coste
-            pedido.Abono = abono
-            pedido.Restante = coste - abono
-            pedido.Observaciones = observaciones
-            pedido.Dispositivo = dispositivo
-            pedido.save()
-
-        return JsonResponse({'ok': True, 'message': 'Orden actualizada'})
-    except Exception as e:
-        return JsonResponse({'ok': False, 'error': str(e)}, status=500)
 
