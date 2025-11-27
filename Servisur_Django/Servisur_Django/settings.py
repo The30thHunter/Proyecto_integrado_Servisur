@@ -10,6 +10,8 @@ For the full list of settings and their values, see
 https://docs.djangoproject.com/en/5.1/ref/settings/
 """
 
+
+"No me deja subir las cosas si no le coloco algo al codigo que ya estaba"
 from pathlib import Path
 import os
 
