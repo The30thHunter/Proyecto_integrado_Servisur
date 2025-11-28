@@ -587,3 +587,48 @@ document.addEventListener("DOMContentLoaded", () => {
   actualizarGuiaVisual();
 });
 // ------------------ Fin JS Unificado ------------------
+
+
+
+
+
+document.getElementById("btn-guardar-modal").addEventListener("click", async () => {
+  const form = document.getElementById("form-editar-orden");
+  const ordenId = form.querySelector("[name='orden_id']").value;
+
+  const estadoSelect = form.querySelector("[name='nuevo_estado']");
+  if (!estadoSelect || !estadoSelect.value) {
+    alert("⚠️ Debes seleccionar un estado válido.");
+    estadoSelect.focus();
+    return;
+  }
+
+  const formData = new FormData(form);
+
+  try {
+    const res = await fetch(`/reparacion/${ordenId}/editar/`, {
+      method: "POST",
+      headers: { "X-CSRFToken": getCsrfToken() }, // asegúrate de tener esta función
+      body: formData,
+    });
+
+    if (res.ok) {
+      alert("✅ Orden actualizada correctamente");
+      const modal = bootstrap.Modal.getInstance(document.getElementById("modal-editar"));
+      modal.hide();
+      location.reload();
+    } else {
+      alert("❌ Error al actualizar la orden");
+    }
+  } catch (err) {
+    console.error("Error al enviar el formulario:", err);
+    alert("❌ Error inesperado al guardar");
+  }
+});
+
+
+
+
+
+
+

@@ -512,83 +512,128 @@ def agregar_falla_ajax(request):
     return JsonResponse({"error": "Método no permitido."}, status=405)
 
 
-# ✏️ Editar reparación (requiere login; si quieres restringir: usa decorador según perfil)
-@login_required
+from django.shortcuts import get_object_or_404, render, redirect
+from django.http import JsonResponse
+from django.views.decorators.http import require_http_methods
+from django.db import transaction
+from django import forms
+from .models import Cliente, Dispositivo, Pedido, Marca, Modelo, Tipo_Falla
+
+# -------------------------
+# ModelForms (ajusta si quieres campos distintos)
+# -------------------------
+class ClienteForm(forms.ModelForm):
+    class Meta:
+        model = Cliente
+        fields = ['Nombre', 'Apellido', 'Rut', 'Numero_telefono']
+
+
+class DispositivoForm(forms.ModelForm):
+    class Meta:
+        model = Dispositivo
+        # 'modelo' es FK a Modelo; 'rut' es FK a Cliente
+        fields = ['modelo', 'Metodo_Bloqueo', 'Codigo_Bloqueo', 'rut']
+
+
+class PedidoForm(forms.ModelForm):
+    class Meta:
+        model = Pedido
+        fields = ['Fecha', 'Coste', 'Abono', 'Estado', 'Observaciones', 'Tipo_de_falla']
+
+
+# -------------------------
+# Vista: editar_reparacion_view
+# -------------------------
+@require_http_methods(["GET", "POST"])
 def editar_reparacion_view(request, orden_id):
-    pedido = get_object_or_404(Pedido, pk=orden_id)
-    dispositivo = pedido.Dispositivo
-    cliente = dispositivo.rut if dispositivo and dispositivo.rut else None
+    """
+    GET:
+      - Si es petición normal, renderiza una página con los forms (opcional).
+      - Si tu frontend usa otro endpoint para JSON (p.ej. /reparacion/<id>/json/), puedes omitir la rama GET.
+    POST:
+      - Valida los tres forms con prefijos: 'cliente', 'dispositivo', 'pedido'.
+      - Si todos son válidos guarda dentro de una transacción.
+      - Si la petición es AJAX devuelve JsonResponse {'ok': True} o {'ok': False, 'errores': {...}}.
+      - Si no es AJAX redirige o renderiza con errores.
+    """
+    is_ajax = request.headers.get('x-requested-with') == 'XMLHttpRequest'
 
-    if request.method == "POST":
-        cliente_form = ClienteForm(request.POST, prefix="cliente", instance=cliente)
-        dispositivo_form = DispositivoForm(request.POST, prefix="dispositivo", instance=dispositivo)
-        pedido_form = PedidoForm(request.POST, prefix="pedido", instance=pedido)
+    # Cargar pedido con select_related para evitar consultas adicionales
+    ped = get_object_or_404(Pedido.objects.select_related('Dispositivo__rut', 'Dispositivo__modelo__Marca', 'Tipo_de_falla'), pk=orden_id)
+    disp = ped.Dispositivo  # nota: en tu modelo el campo se llama Dispositivo (mayúscula)
+    cli = disp.rut if disp else None
 
-        observaciones = request.POST.get('pedido-Observaciones', '').strip()
-        tipo_falla_text = request.POST.get('dispositivo-Tipo_Falla', '').strip() or request.POST.get('nueva_falla', '').strip()
+    if request.method == 'GET':
+        # Si quieres devolver JSON para el modal, puedes construir y devolver los datos aquí.
+        # Por simplicidad devolvemos un render con forms prellenados (opcional).
+        cliente_form = ClienteForm(prefix='cliente', instance=cli)
+        dispositivo_form = DispositivoForm(prefix='dispositivo', instance=disp)
+        pedido_form = PedidoForm(prefix='pedido', instance=ped)
+        context = {
+            'cliente_form': cliente_form,
+            'dispositivo_form': dispositivo_form,
+            'pedido_form': pedido_form,
+            'pedido': ped,
+        }
+        return render(request, 'consultar_reparacion.html', context)
 
-        if cliente_form.is_valid() and dispositivo_form.is_valid() and pedido_form.is_valid():
-            try:
-                with transaction.atomic():
-                    cliente = cliente_form.save()
+    # POST: construir forms con prefijos (coinciden con los names del frontend)
+    cliente_form = ClienteForm(request.POST, prefix='cliente', instance=cli)
+    dispositivo_form = DispositivoForm(request.POST, prefix='dispositivo', instance=disp)
+    pedido_form = PedidoForm(request.POST, prefix='pedido', instance=ped)
 
-                    dispositivo = dispositivo_form.save(commit=False)
-                    dispositivo.rut = cliente
+    # Validar los forms; si alguno falla, no se guarda nada
+    if not (cliente_form.is_valid() and dispositivo_form.is_valid() and pedido_form.is_valid()):
+        errores = {
+            'cliente': {k: list(v) for k, v in cliente_form.errors.items()},
+            'dispositivo': {k: list(v) for k, v in dispositivo_form.errors.items()},
+            'pedido': {k: list(v) for k, v in pedido_form.errors.items()},
+        }
+        if is_ajax:
+            return JsonResponse({'ok': False, 'errores': errores})
+        # Si no es AJAX, renderiza la plantilla con los forms y errores
+        context = {
+            'cliente_form': cliente_form,
+            'dispositivo_form': dispositivo_form,
+            'pedido_form': pedido_form,
+            'pedido': ped,
+        }
+        return render(request, 'consultar_reparacion.html', context)
 
-                    marca_raw = request.POST.get('dispositivo-Marca') or request.POST.get('Marca')
-                    modelo_raw = request.POST.get('dispositivo-modelo') or request.POST.get('modelo')
-                    nuevo_modelo_nombre = request.POST.get('nuevo_modelo', '').strip()
+    # Si llegamos aquí, todos los forms son válidos: guardar dentro de una transacción
+    try:
+        with transaction.atomic():
+            cliente_obj = cliente_form.save()
+            dispositivo_obj = dispositivo_form.save(commit=False)
+            # Asegura la relación cliente <-> dispositivo
+            dispositivo_obj.rut = cliente_obj
+            dispositivo_obj.save()
+            pedido_obj = pedido_form.save(commit=False)
+            pedido_obj.Dispositivo = dispositivo_obj
+            pedido_obj.save()
+    except Exception as e:
+        # Error inesperado al guardar: devolver como error general
+        if is_ajax:
+            return JsonResponse({'ok': False, 'errores': {'cliente': {}, 'dispositivo': {}, 'pedido': {'__all__': [str(e)]}}})
+        # Para petición normal, mostrar mensaje y redirigir o renderizar
+        context = {
+            'cliente_form': cliente_form,
+            'dispositivo_form': dispositivo_form,
+            'pedido_form': pedido_form,
+            'pedido': ped,
+            'error_general': str(e),
+        }
+        return render(request, 'consultar_reparacion.html', context)
 
-                    marca = None
-                    if marca_raw == 'agregar_marca':
-                        nueva_marca = request.POST.get('nueva_marca', '').strip()
-                        if nueva_marca:
-                            marca = Marca.objects.create(Marca=nueva_marca)
-                    else:
-                        try:
-                            marca = Marca.objects.filter(id=int(marca_raw)).first() if marca_raw not in (None, '') else None
-                        except (ValueError, TypeError):
-                            marca = None
+    # Guardado exitoso
+    if is_ajax:
+        return JsonResponse({'ok': True})
+    # Si no es AJAX, redirige al historial con mensaje
+    from django.contrib import messages
+    messages.success(request, f'Orden {orden_id} actualizada correctamente.')
+    return redirect('consultar_historial')
 
-                    if modelo_raw == 'agregar_nuevo' and nuevo_modelo_nombre and marca:
-                        modelo_existente = Modelo.objects.filter(Modelo__iexact=nuevo_modelo_nombre, Marca=marca).first()
-                        dispositivo.modelo = modelo_existente or Modelo.objects.create(Modelo=nuevo_modelo_nombre, Marca=marca)
-                    elif modelo_raw:
-                        try:
-                            dispositivo.modelo_id = int(modelo_raw)
-                        except (TypeError, ValueError):
-                            pass
 
-                    dispositivo.save()
-
-                    if tipo_falla_text:
-                        tipo_falla_obj, _ = Tipo_Falla.objects.get_or_create(Falla=tipo_falla_text)
-                        pedido.Tipo_de_falla = tipo_falla_obj
-
-                    pedido = pedido_form.save(commit=False)
-                    pedido.Dispositivo = dispositivo
-                    pedido.Observaciones = observaciones
-                    pedido.Restante = (pedido.Coste or 0) - (pedido.Abono or 0)
-                    pedido.save()
-
-                messages.success(request, f"Orden {pedido.N_Orden} actualizada correctamente.")
-                return redirect('consultar_historial')
-            except Exception as e:
-                messages.error(request, f"Ocurrió un error al actualizar: {e}")
-        else:
-            messages.error(request, "Corrige los errores del formulario.")
-    else:
-        cliente_form = ClienteForm(prefix="cliente", instance=cliente)
-        dispositivo_form = DispositivoForm(prefix="dispositivo", instance=dispositivo)
-        pedido_form = PedidoForm(prefix="pedido", instance=pedido)
-
-    context = {
-        "cliente_form": cliente_form,
-        "dispositivo_form": dispositivo_form,
-        "pedido_form": pedido_form,
-        "pedido": pedido,
-    }
-    return render(request, "base_datos/editar_reparacion.html", context)
 
 
 # 🔄 Datos JSON para modal de edición (requiere login)
@@ -631,6 +676,9 @@ def pedido_json_view(request, orden_id):
         },
         'modelos_de_marca': modelos,
         'marcas': list(Marca.objects.all().values('id','Marca')),
+        
+        
+        'fallas': list(Tipo_Falla.objects.all().values('id','Falla')),
     }
     return JsonResponse(data)
 
@@ -647,18 +695,19 @@ def pedido_actualizar_view(request, orden_id):
         return JsonResponse({'ok': False, 'error': 'Estado inválido'}, status=400)
 
     # Si es Técnico de Taller, opcionalmente permitir solo TER
-    if request.user.groups.filter(name='Técnico de Taller').exists() and not (request.user.is_superuser or request.user.groups.filter(name='Administrador').exists()):
+    if request.user.groups.filter(name='Técnico de Taller').exists() and not (
+        request.user.is_superuser or request.user.groups.filter(name='Administrador').exists()
+    ):
         # Descomenta si quieres forzar solo TER:
         # if nuevo_estado != 'TER':
         #     return JsonResponse({'ok': False, 'error': "Solo puedes marcar como 'Terminado'."}, status=403)
-        pedido.Estado = nuevo_estado
-        pedido.save()
+
+        # ✅ Actualizar directamente sin disparar validaciones de fecha
+        Pedido.objects.filter(pk=pedido.pk).update(Estado=nuevo_estado)
         return JsonResponse({'ok': True, 'message': f'Orden {pedido.N_Orden} actualizada a {nuevo_estado}.'})
 
     # Administrador / superuser
-    pedido.Estado = nuevo_estado
-    pedido.save()
+    Pedido.objects.filter(pk=pedido.pk).update(Estado=nuevo_estado)
     return JsonResponse({'ok': True, 'message': f'Estado de orden {pedido.N_Orden} actualizado.'})
-
 
 
