@@ -265,7 +265,64 @@ def estado_reparacion_view(request):
 # 📄 Vista para generar documento
 @login_required
 def generar_documento_view(request):
-    return render(request, 'base_datos/Generar_documento.html')
+    u = request.user
+
+    # Bloqueo de permisos (similar a estado_reparacion)
+    if u.groups.filter(name='Operador Técnico').exists() and not (u.is_superuser or u.groups.filter(name='Administrador').exists()):
+        messages.error(request, "No tienes permisos para generar documentos.")
+        return redirect('main')
+
+    if not (u.is_superuser or u.groups.filter(name__in=['Administrador', 'Técnico de Taller']).exists()):
+        messages.error(request, "No tienes permisos suficientes para acceder aquí.")
+        return redirect('main')
+
+    # Filtros GET
+    qs = Pedido.objects.select_related('Dispositivo__rut', 'Dispositivo__modelo__Marca').filter(Activo=True)
+
+    orden = request.GET.get('orden', '').strip()
+    fecha = request.GET.get('fecha', '').strip()
+    doc = request.GET.get('doc', '').strip()
+    nombre = request.GET.get('nombre', '').strip()
+    estado = request.GET.get('estado', '').strip()
+
+    if orden:
+        qs = qs.filter(N_Orden=int(orden)) if orden.isdigit() else qs.filter(N_Orden__icontains=orden)
+
+    if fecha:
+        parsed = None
+        try:
+            parsed = datetime.strptime(fecha, "%Y-%m-%d").date()
+        except Exception:
+            try:
+                parsed = datetime.strptime(fecha, "%d/%m/%Y").date()
+            except Exception:
+                parsed = None
+        qs = qs.filter(Fecha=parsed) if parsed else qs.filter(Fecha__icontains=fecha)
+
+    if doc:
+        qs = qs.filter(
+            models.Q(Dispositivo__rut__Rut__icontains=doc) |
+            models.Q(Dispositivo__rut__DocumentoExtranjero__icontains=doc)
+        )
+
+    if nombre:
+        qs = qs.filter(
+            models.Q(Dispositivo__rut__Nombre__icontains=nombre) |
+            models.Q(Dispositivo__rut__Apellido__icontains=nombre)
+        )
+
+    if estado:
+        qs = qs.filter(Estado=estado)
+
+    qs = qs.order_by('-Fecha', '-N_Orden')[:500]
+
+    context = {
+        'pedidos': qs,
+        'filtros': {'orden': orden, 'fecha': fecha, 'doc': doc, 'nombre': nombre, 'estado': estado},
+        'estado_choices': Pedido.ESTADOS,
+    }
+    return render(request, 'base_datos/Generar_documento.html', context)
+
 
 
 # 📊 Generar Excel (solo Administrador)

@@ -35,16 +35,12 @@ Firma Cliente: _________________________
 ========================================
 """
 
-print(plantilla_ticket.format(
-    nombre="Kevin Fuenmayor",
-    rut="9098749-8",
-    telefono="+56994160745",
-    fecha="14/11/2025",
-    marca="Samsung",
-    modelo="Galaxy A51",
-    falla="Pantalla rota",
-    total="60000",
-    abono="40000",
-    restante="20000",
-    observaciones="Entrega estimada en 3 días"
+def Rellenar(nombre,rut,telefono,fecha,marca,modelo,falla,total,abono,restante,observaciones):
+    print(plantilla_ticket.format(
+    nombre,rut,telefono,fecha,
+    marca,modelo,falla,total,
+    abono,restante,observaciones
 ))
+
+
+
