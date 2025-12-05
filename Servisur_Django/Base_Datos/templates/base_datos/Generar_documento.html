@@ -87,7 +87,7 @@
               <td class="td-fecha">{{ p.Fecha }}</td>
               <td class="td-modelo">{% if p.Dispositivo and p.Dispositivo.modelo %}{{ p.Dispositivo.modelo.Marca.Marca }} {{ p.Dispositivo.modelo.Modelo }}{% else %}-{% endif %}</td>
               <td class="td-trabajo">{{ p.Tipo_de_falla|default:"-" }}</td>
-              <td class="td-observaciones">{{ p.Dispositivo.Codigo_Bloqueo|default:"-" }}</td>
+              <td class="td-observaciones">{{ p.Observaciones|default:"-" }}</td>
               <td>
                 <div class="d-flex gap-2">
                   <button type="button" class="btn btn-sm btn-outline-primary btn-imprimir" title="Imprimir boleta">Imprimir</button>
