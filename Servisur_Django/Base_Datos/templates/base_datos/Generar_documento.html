@@ -110,57 +110,21 @@
 (function () {
   function normalize(str) { return (str||'').toString().trim(); }
 
-  function generarHtmlBoleta(data) {
-    return `
-      <!doctype html>
-      <html>
-      <head>
-        <meta charset="utf-8" />
-        <title>Boleta - Orden ${data.orden}</title>
-        <style>
-          body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial; padding:20px; color:#0f1724; }
-          .header { display:flex; align-items:center; gap:12px; margin-bottom:18px; }
-          .logo { width:86px; height:auto; }
-          .title { font-size:18px; font-weight:700; color:#0b5ed7; }
-          .meta { margin-top:6px; color:#6b7280; font-size:13px; }
-          .box { border:1px solid #e6eef9; padding:12px; border-radius:8px; margin-bottom:10px; }
-          table { width:100%; border-collapse:collapse; margin-top:6px; }
-          td { padding:6px 8px; vertical-align:top; }
-          .label { color:#6b7280; width:160px; font-weight:600; }
-          .value { color:#111827; }
-          .footer { margin-top:18px; font-size:13px; color:#6b7280; }
-          @media print { body { margin:0; } .no-print { display:none; } }
-        </style>
-      </head>
-      <body>
-        <div class="header">
-          <img class="logo" src="${location.origin + '/static/img/logo_servisur1.png'}" alt="Servisur">
-          <div>
-            <div class="title">Boleta de Recepción - Servisur</div>
-            <div class="meta">Orden ${data.orden} • Fecha ${data.fecha}</div>
-          </div>
-        </div>
+  
+  function imprimirBoleta(data) {
+  fetch('/imprimir-ticket/', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/x-www-form-urlencoded',
+      'X-CSRFToken': getCookie('csrftoken') // si usas CSRF
+    },
+    body: new URLSearchParams(data)
+  })
+  .then(response => response.text())
+  .then(msg => alert(msg))
+  .catch(err => console.error("Error:", err));
+}
 
-        <div class="box">
-          <table>
-            <tr><td class="label">Nro Orden</td><td class="value">${data.orden}</td></tr>
-            <tr><td class="label">Nro Documento</td><td class="value">${data.doc}</td></tr>
-            <tr><td class="label">Nombre</td><td class="value">${data.nombre}</td></tr>
-            <tr><td class="label">Fecha registro</td><td class="value">${data.fecha}</td></tr>
-            <tr><td class="label">Modelo celular</td><td class="value">${data.modelo}</td></tr>
-            <tr><td class="label">Trabajo a realizar</td><td class="value">${data.trabajo}</td></tr>
-            <tr><td class="label">Observaciones</td><td class="value">${data.observaciones}</td></tr>
-          </table>
-        </div>
-
-        <div class="footer">
-          <div>Firma cliente: ____________________________</div>
-          <div style="margin-top:8px">Firma técnico: ____________________________</div>
-        </div>
-      </body>
-      </html>
-    `;
-  }
 
   // Manejar clic en "Imprimir" para cada fila
   document.querySelectorAll('.btn-imprimir').forEach(btn => {

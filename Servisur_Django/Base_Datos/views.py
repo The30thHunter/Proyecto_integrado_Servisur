@@ -324,6 +324,84 @@ def generar_documento_view(request):
     return render(request, 'base_datos/Generar_documento.html', context)
 
 
+import win32print
+import win32ui
+from django.views.decorators.csrf import csrf_exempt
+
+# Plantilla del ticket
+plantilla_ticket = """
+========================================
+              SERVISUR
+        Comprobante de Reparación
+========================================
+
+Nombre:        {nombre}
+RUT:           {rut}
+Teléfono:      {telefono}
+Fecha:         {fecha}
+
+----------------------------------------
+Equipo
+----------------------------------------
+Marca:         {marca}
+Modelo:        {modelo}
+Tipo de falla: {falla}
+
+----------------------------------------
+Detalle de Pago
+----------------------------------------
+Total a pagar: ${total}
+Abono:         ${abono}
+Restante:      ${restante}
+
+----------------------------------------
+Observaciones:
+{observaciones}
+
+----------------------------------------
+Firma Cliente: _________________________
+
+========================================
+        ¡Gracias por su preferencia!
+========================================
+"""
+
+@csrf_exempt
+def imprimir_ticket_view(request):
+    if request.method == "POST":
+        # Obtener datos del formulario
+        data = request.POST
+        contenido = plantilla_ticket.format(
+            nombre=data.get("nombre", ""),
+            rut=data.get("rut", ""),
+            telefono=data.get("telefono", ""),
+            fecha=data.get("fecha", datetime.date.today().strftime("%Y-%m-%d")),
+            marca=data.get("marca", ""),
+            modelo=data.get("modelo", ""),
+            falla=data.get("falla", ""),
+            total=data.get("total", "0"),
+            abono=data.get("abono", "0"),
+            restante=data.get("restante", "0"),
+            observaciones=data.get("observaciones", "")
+        )
+
+        try:
+            # Obtener impresora predeterminada
+            printer_name = win32print.GetDefaultPrinter()
+            hprinter = win32print.OpenPrinter(printer_name)
+            job = win32print.StartDocPrinter(hprinter, 1, ("Ticket Servisur", None, "RAW"))
+            win32print.StartPagePrinter(hprinter)
+            win32print.WritePrinter(hprinter, contenido.encode('utf-8'))
+            win32print.EndPagePrinter(hprinter)
+            win32print.EndDocPrinter(hprinter)
+            win32print.ClosePrinter(hprinter)
+
+            return HttpResponse("Ticket enviado a la impresora correctamente.")
+        except Exception as e:
+            return HttpResponse(f"Error al imprimir: {str(e)}", status=500)
+
+    return HttpResponse("Método no permitido", status=405)
+
 
 # 📊 Generar Excel (solo Administrador)
 @solo_administrador

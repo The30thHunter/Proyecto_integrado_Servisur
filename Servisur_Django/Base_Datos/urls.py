@@ -30,5 +30,7 @@ urlpatterns = [
     # alias para AJAX que usan scripts antiguos o externos
     path('ajax/modelos/', views.obtener_modelos_por_marca, name='ajax_modelos'),
     path('ajax/tipos_falla/', views.obtener_tipos_falla, name='ajax_tipos_falla'),
+    #ruta de impresion
+    path('imprimir-ticket/', views.imprimir_ticket_view, name='imprimir_ticket'),
 
 ]
