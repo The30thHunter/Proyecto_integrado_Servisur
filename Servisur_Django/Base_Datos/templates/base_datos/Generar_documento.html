@@ -76,13 +76,35 @@
           {% for p in pedidos %}
             <tr data-orden="{{ p.N_Orden }}"
                 data-fecha="{{ p.Fecha }}"
-                data-doc="{% if p.Dispositivo and p.Dispositivo.rut %}{{ p.Dispositivo.rut.Rut }}{% else %}-{% endif %}"
+                data-doc="{% if p.Dispositivo and p.Dispositivo.rut %}
+                            {% if p.Dispositivo.rut.Rut %}
+                                {{ p.Dispositivo.rut.Rut }}
+                            {% elif p.Dispositivo.rut.DocumentoExtranjero %}
+                                {{ p.Dispositivo.rut.DocumentoExtranjero }}
+                            {% else %}
+                                -
+                            {% endif %}
+                          {% else %}
+                            -
+                          {% endif %}"
                 data-nombre="{% if p.Dispositivo and p.Dispositivo.rut %}{{ p.Dispositivo.rut.Nombre }} {{ p.Dispositivo.rut.Apellido }}{% else %}-{% endif %}"
                 data-modelo="{% if p.Dispositivo and p.Dispositivo.modelo %}{{ p.Dispositivo.modelo.Marca.Marca }} {{ p.Dispositivo.modelo.Modelo }}{% else %}-{% endif %}"
                 data-trabajo="{{ p.Tipo_de_falla|default:'' }}"
                 data-observaciones="{{ p.Dispositivo.Codigo_Bloqueo|default:'' }}">
               <td class="td-orden">{{ p.N_Orden }}</td>
-              <td class="td-doc">{% if p.Dispositivo and p.Dispositivo.rut %}{{ p.Dispositivo.rut.Rut }}{% else %}-{% endif %}</td>
+              <td class="td-doc">
+                {% if p.Dispositivo and p.Dispositivo.rut %}
+                  {% if p.Dispositivo.rut.Rut %}
+                    {{ p.Dispositivo.rut.Rut }}
+                  {% elif p.Dispositivo.rut.DocumentoExtranjero %}
+                    {{ p.Dispositivo.rut.DocumentoExtranjero }}
+                  {% else %}
+                    -
+                  {% endif %}
+                {% else %}
+                  -
+                {% endif %}
+              </td>
               <td class="td-nombre">{% if p.Dispositivo and p.Dispositivo.rut %}{{ p.Dispositivo.rut.Nombre }} {{ p.Dispositivo.rut.Apellido }}{% else %}-{% endif %}</td>
               <td class="td-fecha">{{ p.Fecha }}</td>
               <td class="td-modelo">{% if p.Dispositivo and p.Dispositivo.modelo %}{{ p.Dispositivo.modelo.Marca.Marca }} {{ p.Dispositivo.modelo.Modelo }}{% else %}-{% endif %}</td>
@@ -105,39 +127,23 @@
   <div class="mt-3 text-muted small">Nota: Esta vista prepara la boleta. Presiona Imprimir para abrir la vista de impresión del navegador.</div>
 </div>
 
-<!-- Bloque JS: generar boleta e imprimir (sin <script> embebido en el HTML generado) -->
+<!-- Bloque JS -->
 <script>
 (function () {
   function normalize(str) { return (str||'').toString().trim(); }
 
-  
-  function imprimirBoleta(data) {
-  fetch('/imprimir-ticket/', {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/x-www-form-urlencoded',
-      'X-CSRFToken': getCookie('csrftoken') // si usas CSRF
-    },
-    body: new URLSearchParams(data)
-  })
-  .then(response => response.text())
-  .then(msg => alert(msg))
-  .catch(err => console.error("Error:", err));
-}
-
-
-  // Manejar clic en "Imprimir" para cada fila
+  // Manejar clic en "Imprimir"
   document.querySelectorAll('.btn-imprimir').forEach(btn => {
     btn.addEventListener('click', function () {
       const tr = this.closest('tr');
       const data = {
-        orden: tr.getAttribute('data-orden') || tr.querySelector('.td-orden')?.textContent || '',
-        fecha: tr.getAttribute('data-fecha') || tr.querySelector('.td-fecha')?.textContent || '',
-        doc: tr.getAttribute('data-doc') || tr.querySelector('.td-doc')?.textContent || '',
-        nombre: tr.getAttribute('data-nombre') || tr.querySelector('.td-nombre')?.textContent || '',
-        modelo: tr.getAttribute('data-modelo') || tr.querySelector('.td-modelo')?.textContent || '',
-        trabajo: tr.getAttribute('data-trabajo') || tr.querySelector('.td-trabajo')?.textContent || '',
-        observaciones: tr.getAttribute('data-observaciones') || tr.querySelector('.td-observaciones')?.textContent || ''
+        orden: tr.getAttribute('data-orden') || '',
+        fecha: tr.getAttribute('data-fecha') || '',
+        doc: tr.getAttribute('data-doc') || '',
+        nombre: tr.getAttribute('data-nombre') || '',
+        modelo: tr.getAttribute('data-modelo') || '',
+        trabajo: tr.getAttribute('data-trabajo') || '',
+        observaciones: tr.getAttribute('data-observaciones') || ''
       };
 
       const html = generarHtmlBoleta(data);
@@ -150,46 +156,35 @@
       w.document.write(html);
       w.document.close();
 
-      // Esperar a que la nueva ventana renderice recursos (logo) antes de imprimir
-      // Aumenta el timeout si el logo tarda en cargar
-      const waitForRender = 600;
       setTimeout(() => {
-        try {
-          w.focus();
-          w.print();
-        } catch (e) {
-          console.warn('Error al invocar print:', e);
-        }
-        // cerrar la ventana después de imprimir (opcional)
-        setTimeout(() => {
-          try { w.close(); } catch (e) {}
-        }, 600);
-      }, waitForRender);
+        try { w.focus(); w.print(); } catch (e) { console.warn('Error al imprimir:', e); }
+        setTimeout(() => { try { w.close(); } catch (e) {} }, 600);
+      }, 600);
     });
   });
 
-  // Filtrado cliente (reutiliza función similar a Estado_reparacion)
+  // Filtrado cliente
   const btnFiltrar = document.getElementById('btnFiltrar');
   const btnLimpiar = document.getElementById('btnLimpiar');
 
-  function normalize(str){ return (str||'').toString().toLowerCase().trim(); }
+  function normalizeLower(str){ return (str||'').toString().toLowerCase().trim(); }
 
   function aplicarFiltro() {
-    const vOrden = normalize(document.getElementById('g_orden').value);
-    const vFecha = normalize(document.getElementById('g_fecha').value);
-    const vDoc = normalize(document.getElementById('g_doc').value);
-    const vNombre = normalize(document.getElementById('g_nombre').value);
-    const vModelo = normalize(document.getElementById('g_modelo').value);
-    const vTrabajo = normalize(document.getElementById('g_trabajo').value);
+    const vOrden = normalizeLower(document.getElementById('g_orden').value);
+    const vFecha = normalizeLower(document.getElementById('g_fecha').value);
+    const vDoc = normalizeLower(document.getElementById('g_doc').value);
+    const vNombre = normalizeLower(document.getElementById('g_nombre').value);
+    const vModelo = normalizeLower(document.getElementById('g_modelo').value);
+    const vTrabajo = normalizeLower(document.getElementById('g_trabajo').value);
 
     const rows = document.querySelectorAll('#tablaBoletas tbody tr');
     rows.forEach(row => {
-      const orden = normalize(row.getAttribute('data-orden') || row.querySelector('.td-orden')?.textContent);
-      const fecha = normalize(row.getAttribute('data-fecha') || row.querySelector('.td-fecha')?.textContent);
-      const doc = normalize(row.getAttribute('data-doc') || row.querySelector('.td-doc')?.textContent);
-      const nombre = normalize(row.getAttribute('data-nombre') || row.querySelector('.td-nombre')?.textContent);
-      const modelo = normalize(row.getAttribute('data-modelo') || row.querySelector('.td-modelo')?.textContent);
-      const trabajo = normalize(row.getAttribute('data-trabajo') || row.querySelector('.td-trabajo')?.textContent);
+      const orden = normalizeLower(row.getAttribute('data-orden'));
+      const fecha = normalizeLower(row.getAttribute('data-fecha'));
+      const doc = normalizeLower(row.getAttribute('data-doc'));
+      const nombre = normalizeLower(row.getAttribute('data-nombre'));
+      const modelo = normalizeLower(row.getAttribute('data-modelo'));
+      const trabajo = normalizeLower(row.getAttribute('data-trabajo'));
 
       let show = true;
       if (vOrden && !orden.includes(vOrden)) show = false;
@@ -204,12 +199,8 @@
   }
 
   if (btnFiltrar) btnFiltrar.addEventListener('click', aplicarFiltro);
-  if (btnLimpiar) btnLimpiar.addEventListener('click', function () {
-    setTimeout(() => aplicarFiltro(), 10);
-  });
-
+  if (btnLimpiar) btnLimpiar.addEventListener('click', () => setTimeout(aplicarFiltro, 10));
 })();
 </script>
-
 
 {% endblock %}

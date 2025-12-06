@@ -176,12 +176,14 @@ def registrar_reparacion(request):
 
 
 # Gestionar reparaciones (Estado y visualización)
+
+
 @require_http_methods(["GET", "POST"])
 @login_required
 def estado_reparacion_view(request):
     u = request.user
 
-    # Bloqueo de permisos
+    # 🔒 Bloqueo de permisos
     if u.groups.filter(name='Operador Técnico').exists() and not (u.is_superuser or u.groups.filter(name='Administrador').exists()):
         messages.error(request, "No tienes permisos para gestionar reparaciones.")
         return redirect('main')
@@ -190,6 +192,7 @@ def estado_reparacion_view(request):
         messages.error(request, "No tienes permisos suficientes para acceder aquí.")
         return redirect('main')
 
+    # ✅ POST: actualizar estado
     if request.method == "POST":
         orden_id = request.POST.get("orden_id")
         nuevo_estado = request.POST.get("nuevo_estado")
@@ -203,18 +206,12 @@ def estado_reparacion_view(request):
             messages.error(request, "Estado inválido.")
             return redirect('estado_reparacion')
 
-        # Técnico de Taller: solo actualizar estado
-        if u.groups.filter(name='Técnico de Taller').exists() and not (u.is_superuser or u.groups.filter(name='Administrador').exists()):
-            Pedido.objects.filter(pk=orden_id).update(Estado=nuevo_estado)  # ✅ sin full_clean()
-            messages.success(request, f"Orden {orden_id} actualizada a {nuevo_estado}.")
-            return redirect('estado_reparacion')
-
-        # Administrador / superuser: también usar update para evitar validaciones de fecha
-        Pedido.objects.filter(pk=orden_id).update(Estado=nuevo_estado)  # ✅ sin full_clean()
-        messages.success(request, f"Estado de orden {orden_id} actualizado.")
+        # Actualización directa (sin validaciones extra)
+        Pedido.objects.filter(pk=orden_id).update(Estado=nuevo_estado)
+        messages.success(request, f"Estado de orden {orden_id} actualizado a {nuevo_estado}.")
         return redirect('estado_reparacion')
 
-    # GET: filtros (sin cambios)
+    # ✅ GET: filtros
     qs = Pedido.objects.select_related('Dispositivo__rut', 'Dispositivo__modelo__Marca').filter(Activo=True)
 
     orden = request.GET.get('orden', '').strip()
@@ -254,12 +251,25 @@ def estado_reparacion_view(request):
 
     qs = qs.order_by('-Fecha', '-N_Orden')[:500]
 
+    # ✅ Agregar atributo calculado para documento (RUT o DocumentoExtranjero)
+    for p in qs:
+        doc_value = "-"
+        if p.Dispositivo and p.Dispositivo.rut:
+            rut_obj = p.Dispositivo.rut
+            if rut_obj.Rut and rut_obj.Rut.strip():
+                doc_value = rut_obj.Rut.strip()
+            elif rut_obj.DocumentoExtranjero and rut_obj.DocumentoExtranjero.strip():
+                doc_value = rut_obj.DocumentoExtranjero.strip()
+        p.numero_documento = doc_value
+
     context = {
         'pedidos': qs,
         'filtros': {'orden': orden, 'fecha': fecha, 'doc': doc, 'nombre': nombre, 'estado': estado},
         'estado_choices': Pedido.ESTADOS,
     }
     return render(request, 'base_datos/Estado_reparacion.html', context)
+
+
 
 
 # 📄 Vista para generar documento
