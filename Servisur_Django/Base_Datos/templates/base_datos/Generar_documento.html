@@ -75,25 +75,42 @@
         {% if pedidos %}
           {% for p in pedidos %}
             <tr data-orden="{{ p.N_Orden }}"
-                data-fecha="{{ p.Fecha }}"
-                data-doc="{% if p.Dispositivo and p.Dispositivo.rut %}{{ p.Dispositivo.rut.Rut }}{% else %}-{% endif %}"
-                data-nombre="{% if p.Dispositivo and p.Dispositivo.rut %}{{ p.Dispositivo.rut.Nombre }} {{ p.Dispositivo.rut.Apellido }}{% else %}-{% endif %}"
-                data-modelo="{% if p.Dispositivo and p.Dispositivo.modelo %}{{ p.Dispositivo.modelo.Marca.Marca }} {{ p.Dispositivo.modelo.Modelo }}{% else %}-{% endif %}"
-                data-trabajo="{{ p.Tipo_de_falla|default:'' }}"
-                data-observaciones="{{ p.Dispositivo.Codigo_Bloqueo|default:'' }}">
-              <td class="td-orden">{{ p.N_Orden }}</td>
-              <td class="td-doc">{% if p.Dispositivo and p.Dispositivo.rut %}{{ p.Dispositivo.rut.Rut }}{% else %}-{% endif %}</td>
-              <td class="td-nombre">{% if p.Dispositivo and p.Dispositivo.rut %}{{ p.Dispositivo.rut.Nombre }} {{ p.Dispositivo.rut.Apellido }}{% else %}-{% endif %}</td>
-              <td class="td-fecha">{{ p.Fecha }}</td>
-              <td class="td-modelo">{% if p.Dispositivo and p.Dispositivo.modelo %}{{ p.Dispositivo.modelo.Marca.Marca }} {{ p.Dispositivo.modelo.Modelo }}{% else %}-{% endif %}</td>
-              <td class="td-trabajo">{{ p.Tipo_de_falla|default:"-" }}</td>
-              <td class="td-observaciones">{{ p.Observaciones|default:"-" }}</td>
-              <td>
-                <div class="d-flex gap-2">
-                  <button type="button" class="btn btn-sm btn-outline-primary btn-imprimir" title="Imprimir boleta">Imprimir</button>
-                </div>
-              </td>
-            </tr>
+    data-fecha="{{ p.Fecha }}"
+    data-doc="{% if p.Dispositivo and p.Dispositivo.rut %}
+                {% if p.Dispositivo.rut.Origen == 'NAC' %}
+                  {{ p.Dispositivo.rut.Rut }}
+                {% else %}
+                  {{ p.Dispositivo.rut.DocumentoExtranjero }}
+                {% endif %}
+              {% else %}-{% endif %}"
+    data-nombre="{% if p.Dispositivo and p.Dispositivo.rut %}{{ p.Dispositivo.rut.Nombre }} {{ p.Dispositivo.rut.Apellido }}{% else %}-{% endif %}"
+    data-modelo="{% if p.Dispositivo and p.Dispositivo.modelo %}{{ p.Dispositivo.modelo.Marca.Marca }} {{ p.Dispositivo.modelo.Modelo }}{% else %}-{% endif %}"
+    data-trabajo="{{ p.Tipo_de_falla|default:'' }}"
+    data-observaciones="{{ p.Dispositivo.Codigo_Bloqueo|default:'' }}">
+  <td class="td-orden">{{ p.N_Orden }}</td>
+  <td class="td-doc">
+    {% if p.Dispositivo and p.Dispositivo.rut %}
+      {% if p.Dispositivo.rut.Origen == 'NAC' %}
+        {{ p.Dispositivo.rut.Rut }}
+      {% else %}
+        {{ p.Dispositivo.rut.DocumentoExtranjero }}
+      {% endif %}
+    {% else %}
+      -
+    {% endif %}
+  </td>
+  <td class="td-nombre">{% if p.Dispositivo and p.Dispositivo.rut %}{{ p.Dispositivo.rut.Nombre }} {{ p.Dispositivo.rut.Apellido }}{% else %}-{% endif %}</td>
+  <td class="td-fecha">{{ p.Fecha }}</td>
+  <td class="td-modelo">{% if p.Dispositivo and p.Dispositivo.modelo %}{{ p.Dispositivo.modelo.Marca.Marca }} {{ p.Dispositivo.modelo.Modelo }}{% else %}-{% endif %}</td>
+  <td class="td-trabajo">{{ p.Tipo_de_falla|default:"-" }}</td>
+  <td class="td-observaciones">{{ p.Observaciones|default:"-" }}</td>
+  <td>
+    <div class="d-flex gap-2">
+      <button type="button" class="btn btn-sm btn-outline-primary btn-imprimir" title="Imprimir boleta">Imprimir</button>
+    </div>
+  </td>
+</tr>
+
           {% endfor %}
         {% else %}
           <tr><td colspan="8" class="text-center text-muted">No hay registros para mostrar.</td></tr>
