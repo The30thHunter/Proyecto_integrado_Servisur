@@ -175,15 +175,12 @@ def registrar_reparacion(request):
     })
 
 
-# Gestionar reparaciones (Estado y visualización)
-
-
 @require_http_methods(["GET", "POST"])
 @login_required
 def estado_reparacion_view(request):
     u = request.user
 
-    # 🔒 Bloqueo de permisos
+    # Bloqueo de permisos
     if u.groups.filter(name='Operador Técnico').exists() and not (u.is_superuser or u.groups.filter(name='Administrador').exists()):
         messages.error(request, "No tienes permisos para gestionar reparaciones.")
         return redirect('main')
@@ -192,7 +189,6 @@ def estado_reparacion_view(request):
         messages.error(request, "No tienes permisos suficientes para acceder aquí.")
         return redirect('main')
 
-    # ✅ POST: actualizar estado
     if request.method == "POST":
         orden_id = request.POST.get("orden_id")
         nuevo_estado = request.POST.get("nuevo_estado")
@@ -206,12 +202,18 @@ def estado_reparacion_view(request):
             messages.error(request, "Estado inválido.")
             return redirect('estado_reparacion')
 
-        # Actualización directa (sin validaciones extra)
-        Pedido.objects.filter(pk=orden_id).update(Estado=nuevo_estado)
-        messages.success(request, f"Estado de orden {orden_id} actualizado a {nuevo_estado}.")
+        # Técnico de Taller: solo actualizar estado
+        if u.groups.filter(name='Técnico de Taller').exists() and not (u.is_superuser or u.groups.filter(name='Administrador').exists()):
+            Pedido.objects.filter(pk=orden_id).update(Estado=nuevo_estado)  # ✅ sin full_clean()
+            messages.success(request, f"Orden {orden_id} actualizada a {nuevo_estado}.")
+            return redirect('estado_reparacion')
+
+        # Administrador / superuser: también usar update para evitar validaciones de fecha
+        Pedido.objects.filter(pk=orden_id).update(Estado=nuevo_estado)  # ✅ sin full_clean()
+        messages.success(request, f"Estado de orden {orden_id} actualizado.")
         return redirect('estado_reparacion')
 
-    # ✅ GET: filtros
+    # GET: filtros (sin cambios)
     qs = Pedido.objects.select_related('Dispositivo__rut', 'Dispositivo__modelo__Marca').filter(Activo=True)
 
     orden = request.GET.get('orden', '').strip()
@@ -251,25 +253,12 @@ def estado_reparacion_view(request):
 
     qs = qs.order_by('-Fecha', '-N_Orden')[:500]
 
-    # ✅ Agregar atributo calculado para documento (RUT o DocumentoExtranjero)
-    for p in qs:
-        doc_value = "-"
-        if p.Dispositivo and p.Dispositivo.rut:
-            rut_obj = p.Dispositivo.rut
-            if rut_obj.Rut and rut_obj.Rut.strip():
-                doc_value = rut_obj.Rut.strip()
-            elif rut_obj.DocumentoExtranjero and rut_obj.DocumentoExtranjero.strip():
-                doc_value = rut_obj.DocumentoExtranjero.strip()
-        p.numero_documento = doc_value
-
     context = {
         'pedidos': qs,
         'filtros': {'orden': orden, 'fecha': fecha, 'doc': doc, 'nombre': nombre, 'estado': estado},
         'estado_choices': Pedido.ESTADOS,
     }
     return render(request, 'base_datos/Estado_reparacion.html', context)
-
-
 
 
 # 📄 Vista para generar documento
@@ -514,35 +503,40 @@ def login_view(request):
     return render(request, 'login.html', {'form': form, 'error_message': error_message})
 
 
-# 📋 Historial de reparaciones (requiere login)
+
+
+from datetime import datetime
+from django.shortcuts import render
+from django.contrib.auth.decorators import login_required
+from django.db.models import Q
+from .models import Pedido
+
+
 @login_required
 def consultar_historial(request):
+    # Filtros desde GET
     rut = request.GET.get('rut', '').strip()
     nombre = request.GET.get('nombre', '').strip()
     orden = request.GET.get('orden', '').strip()
     fecha = request.GET.get('fecha', '').strip()
 
+    # Query base con relaciones
     qs = Pedido.objects.select_related(
         'Dispositivo__rut',
         'Dispositivo__modelo__Marca',
         'Tipo_de_falla'
     ).filter(Activo=True)
 
+    # Aplicar filtros
     if rut:
-        qs = qs.filter(Dispositivo__rut__Rut__icontains=rut)
+        qs = qs.filter(Q(Dispositivo__rut__Rut__icontains=rut) | Q(Dispositivo__rut__DocumentoExtranjero__icontains=rut))
 
     if nombre:
-        qs = qs.filter(
-            Q(Dispositivo__rut__Nombre__icontains=nombre) |
-            Q(Dispositivo__rut__Apellido__icontains=nombre)
-        )
+        qs = qs.filter(Q(Dispositivo__rut__Nombre__icontains=nombre) | Q(Dispositivo__rut__Apellido__icontains=nombre))
 
     if orden:
         if orden.isdigit():
-            try:
-                qs = qs.filter(N_Orden=int(orden))
-            except Exception:
-                qs = qs.filter(N_Orden__icontains=orden)
+            qs = qs.filter(N_Orden=int(orden))
         else:
             qs = qs.filter(N_Orden__icontains=orden)
 
@@ -550,44 +544,43 @@ def consultar_historial(request):
         try:
             parsed = datetime.strptime(fecha, "%Y-%m-%d").date()
             qs = qs.filter(Fecha=parsed)
-        except Exception:
+        except ValueError:
             qs = qs.filter(Fecha__icontains=fecha)
 
     qs = qs.order_by('-Fecha', '-N_Orden')
 
+    # Normalización para evitar None
     reparaciones = []
     for pedido in qs:
         dispositivo = pedido.Dispositivo
         cliente = dispositivo.rut if dispositivo else None
         modelo = dispositivo.modelo if dispositivo else None
-        marca = modelo.Marca if modelo and modelo.Marca else None
+        marca = modelo.Marca if modelo else None
         tipo_falla = pedido.Tipo_de_falla
 
         reparaciones.append({
             'orden_id': pedido.N_Orden,
             'numero_orden': pedido.N_Orden,
-            'fecha_ingreso': pedido.Fecha,
-            'rut': cliente.Rut if cliente else '',
-            'nombre': cliente.Nombre if cliente else '',
-            'apellido': cliente.Apellido if cliente else '',
-            'telefono': cliente.Numero_telefono if cliente else '',
+            'fecha_ingreso': pedido.Fecha if pedido.Fecha else None,
+            'rut': cliente.Rut or cliente.DocumentoExtranjero or '-' if cliente else '-',
+            'nombre': cliente.Nombre or '-' if cliente else '-',
+            'apellido': cliente.Apellido or '-' if cliente else '-',
+            'telefono': cliente.Numero_telefono or '-' if cliente else '-',
             'marca': marca.Marca if marca else 'Sin marca',
             'equipo': modelo.Modelo if modelo else 'Sin modelo',
-            'serie': dispositivo.Codigo_Bloqueo if dispositivo else '',
-            'tipo_falla': tipo_falla.Falla if tipo_falla else '',
-            'estado': pedido.get_Estado_display(),
-            'coste': pedido.Coste,
-            'abono': pedido.Abono,
-            'restante': pedido.Restante,
-            'observaciones': pedido.Observaciones or '',
-            'activo': pedido.Activo,
+            'serie': dispositivo.Codigo_Bloqueo if dispositivo else '-',
+            'tipo_falla': tipo_falla.Falla if tipo_falla else '-',
+            'estado': pedido.get_Estado_display() or '-',
+            'coste': pedido.Coste or 0,
+            'abono': pedido.Abono or 0,
+            'restante': pedido.Restante or 0,
+            'observaciones': pedido.Observaciones or '-',
         })
 
     context = {
         'reparaciones': reparaciones
     }
     return render(request, 'base_datos/Consultar_historial.html', context)
-
 
 # 🔄 Obtener modelos según marca (AJAX)
 def obtener_modelos_por_marca(request):

@@ -1,3 +1,4 @@
+
 {% extends "base_datos/base.html" %}
 {% load static %}
 {% block title %}Estado de Reparación - Servisur{% endblock %}
@@ -11,48 +12,33 @@
 
   <div class="d-flex align-items-center justify-content-between mb-3">
     <div>
-      <h3 class="mb-0 text-secondary"> Estado de Reparación</h3>
+      <h3 class="mb-0 text-secondary">Estado de Reparación</h3>
       <small class="text-muted">Busca y actualiza el estado de las órdenes</small>
-      
-
-      
     </div>
     <div>
-      <!-- espacio para futuros botones -->
-       <div class="container mt-3">
-
-  
-<button type="button" class="btn btn-circle" data-bs-toggle="modal" data-bs-target="#myModal">
-  <img src="{% static 'img/Er.png' %}" class="info-img">
-</button>
-
-
-</div>
-
-<!-- The Modal -->
-<div class="modal fade" id="myModal">
-  <div class="modal-dialog">
-    <div class="modal-content">
-
-      <!-- Modal Header -->
-      <div class="modal-header">
-        <h4 class="modal-title">Estado de reparaciones</h4>
-        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      <div class="container mt-3">
+        <button type="button" class="btn btn-circle" data-bs-toggle="modal" data-bs-target="#myModal">
+          <img src="{% static 'img/Er.png' %}" class="info-img">
+        </button>
       </div>
 
-      <!-- Modal body -->
-      <div class="modal-body">
-        Esta página permite consultar el historial de reparaciones filtrando por RUT, nombre, número de orden o fecha. Los resultados se muestran en una tabla con opción de edición rápida.
+      <!-- Modal -->
+      <div class="modal fade" id="myModal">
+        <div class="modal-dialog">
+          <div class="modal-content">
+            <div class="modal-header">
+              <h4 class="modal-title">Estado de reparaciones</h4>
+              <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+              Esta página permite consultar el historial de reparaciones filtrando por RUT, nombre, número de orden o fecha. Los resultados se muestran en una tabla con opción de edición rápida.
+            </div>
+            <div class="modal-footer">
+              <button type="button" class="btn btn-danger" data-bs-dismiss="modal">Cerrar</button>
+            </div>
+          </div>
+        </div>
       </div>
-
-      <!-- Modal footer -->
-      <div class="modal-footer">
-        <button type="button" class="btn btn-danger" data-bs-dismiss="modal">Close</button>
-      </div>
-
-    </div>
-  </div>
-</div>
     </div>
   </div>
 
@@ -71,22 +57,18 @@
         <label class="form-label small">Nro de orden</label>
         <input name="orden" id="f_orden" type="text" class="form-control form-control-sm" placeholder="Ej: 123" value="{{ filtros.orden }}">
       </div>
-
       <div class="col-md-2">
         <label class="form-label small">Nombre</label>
         <input name="nombre" id="f_nombre" type="text" class="form-control form-control-sm" placeholder="Nombre" value="{{ filtros.nombre }}">
       </div>
-
       <div class="col-md-2">
         <label class="form-label small">RUT / Doc</label>
         <input name="doc" id="f_doc" type="text" class="form-control form-control-sm" placeholder="RUT / DNI" value="{{ filtros.doc }}">
       </div>
-
       <div class="col-md-2">
         <label class="form-label small">Fecha</label>
         <input name="fecha" id="f_fecha" type="text" class="form-control form-control-sm" placeholder="dd/mm/YYYY ó YYYY-MM-DD" value="{{ filtros.fecha }}">
       </div>
-
       <div class="col-md-2">
         <label class="form-label small">Estado</label>
         <select name="estado" id="f_estado" class="form-select form-select-sm">
@@ -96,7 +78,6 @@
           {% endfor %}
         </select>
       </div>
-
       <div class="col-md-2 d-flex align-items-end">
         <button type="submit" class="btn btn-primary btn-sm me-2">Buscar</button>
         <a href="{% url 'estado_reparacion' %}" class="btn btn-outline-secondary btn-sm">Limpiar</a>
@@ -125,29 +106,33 @@
           {% if pedidos %}
             {% for p in pedidos %}
               <tr data-orden="{{ p.N_Orden }}" data-estado="{{ p.Estado }}">
-                <td class="td-orden">{{ p.N_Orden }}</td>
+                <td class="td-orden">{{ p.N_Orden|default_if_none:"-" }}</td>
                 <td class="td-nombre">
                   {% if p.Dispositivo and p.Dispositivo.rut %}
-                    {{ p.Dispositivo.rut.Nombre }} {{ p.Dispositivo.rut.Apellido }}
+                    {{ p.Dispositivo.rut.Nombre|default_if_none:"-" }} {{ p.Dispositivo.rut.Apellido|default_if_none:"-" }}
                   {% else %}-{% endif %}
                 </td>
                 <td class="td-rut">
                   {% if p.Dispositivo and p.Dispositivo.rut %}
-                  {% if p.Dispositivo.rut.Origen == "NAC" %}
-                  {{ p.Dispositivo.rut.Rut }}
+                    {% if p.Dispositivo.rut.Rut %}
+                      {{ p.Dispositivo.rut.Rut|default_if_none:"-" }}
+                    {% elif p.Dispositivo.rut.DocumentoExtranjero %}
+                      {{ p.Dispositivo.rut.DocumentoExtranjero|default_if_none:"-" }}
+                    {% else %}
+                      -
+                    {% endif %}
                   {% else %}
-                  {{ p.Dispositivo.rut.DocumentoExtranjero }}
+                    -
                   {% endif %}
-                  {% else %}-{% endif %}
                 </td>
-                <td class="td-fecha">{{ p.Fecha }}</td>
+                <td class="td-fecha">{{ p.Fecha|default_if_none:"-" }}</td>
                 <td class="td-modelo">
                   {% if p.Dispositivo and p.Dispositivo.modelo %}
-                    {{ p.Dispositivo.modelo.Marca.Marca }} {{ p.Dispositivo.modelo.Modelo }}
+                    {{ p.Dispositivo.modelo.Marca.Marca|default_if_none:"-" }} {{ p.Dispositivo.modelo.Modelo|default_if_none:"-" }}
                   {% else %}-{% endif %}
                 </td>
-                <td class="td-serie">{{ p.Dispositivo.Codigo_Bloqueo|default:"-" }}</td>
-                <td class="td-trabajo">{% if p.Tipo_de_falla %}{{ p.Tipo_de_falla.Falla }}{% else %}-{% endif %}</td>
+                <td class="td-serie">{{ p.Dispositivo.Codigo_Bloqueo|default_if_none:"-" }}</td>
+                <td class="td-trabajo">{% if p.Tipo_de_falla %}{{ p.Tipo_de_falla.Falla|default_if_none:"-" }}{% else %}-{% endif %}</td>
                 <td class="td-estado">
                   {% for code,label in estado_choices %}
                     {% if p.Estado == code %}{{ label }}{% endif %}
@@ -182,6 +167,5 @@
     <p class="mb-0">Desarrollado por el equipo técnico | Versión 1.0</p>
   </footer>
 </div>
-
 
 {% endblock %}
