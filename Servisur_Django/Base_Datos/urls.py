@@ -1,5 +1,8 @@
 from django.urls import path
 from . import views
+from .views import cambiar_grupo_view
+from .views import toggle_usuario_view
+from .views import cambiar_contrasena_view
 
 urlpatterns = [
     #  Navegación principal
@@ -32,5 +35,14 @@ urlpatterns = [
     path('ajax/tipos_falla/', views.obtener_tipos_falla, name='ajax_tipos_falla'),
     #ruta de impresion
     path('imprimir-ticket/', views.imprimir_ticket_view, name='imprimir_ticket'),
+
+    path('gestionar_cuentas/', views.gestionar_cuentas_view, name='gestionar_cuentas'),
+    path('activar_usuario/<int:user_id>/', views.activar_usuario_view, name='activar_usuario'),
+    path('desactivar_usuario/<int:user_id>/', views.desactivar_usuario_view, name='desactivar_usuario'),
+    path('crear_usuario/', views.crear_usuario_view, name='crear_usuario'),
+    path('usuarios/<int:user_id>/cambiar-grupo/', cambiar_grupo_view, name='cambiar_grupo'),
+    path('usuarios/<int:user_id>/toggle/', toggle_usuario_view, name='toggle_usuario'),
+    path('cambiar_contrasena/<int:user_id>/', views.cambiar_contrasena_view, name='cambiar_contrasena'),
+
 
 ]

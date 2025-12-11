@@ -13,6 +13,7 @@ from django.utils.dateparse import parse_date
 import io
 import pandas as pd
 from datetime import datetime
+import re
 
 from .decoradores import solo_administrador, solo_operador, solo_reparador
 from .models import (
@@ -180,12 +181,9 @@ def registrar_reparacion(request):
 def estado_reparacion_view(request):
     u = request.user
 
-    # Bloqueo de permisos
-    if u.groups.filter(name='Operador Técnico').exists() and not (u.is_superuser or u.groups.filter(name='Administrador').exists()):
-        messages.error(request, "No tienes permisos para gestionar reparaciones.")
-        return redirect('main')
-
-    if not (u.is_superuser or u.groups.filter(name__in=['Administrador', 'Técnico de Taller']).exists()):
+    # Permisos: Administrador y Operador Técnico pueden gestionar reparaciones completas;
+    # Técnico de Taller solo puede actualizar estados.
+    if not (u.is_superuser or u.groups.filter(name__in=['Administrador', 'Operador Técnico', 'Técnico de Taller']).exists()):
         messages.error(request, "No tienes permisos suficientes para acceder aquí.")
         return redirect('main')
 
@@ -208,10 +206,11 @@ def estado_reparacion_view(request):
             messages.success(request, f"Orden {orden_id} actualizada a {nuevo_estado}.")
             return redirect('estado_reparacion')
 
-        # Administrador / superuser: también usar update para evitar validaciones de fecha
+        # Administrador / Operador Técnico / superuser: pueden gestionar reparaciones completas
         Pedido.objects.filter(pk=orden_id).update(Estado=nuevo_estado)  # ✅ sin full_clean()
         messages.success(request, f"Estado de orden {orden_id} actualizado.")
         return redirect('estado_reparacion')
+
 
     # GET: filtros (sin cambios)
     qs = Pedido.objects.select_related('Dispositivo__rut', 'Dispositivo__modelo__Marca').filter(Activo=True)
@@ -266,13 +265,10 @@ def estado_reparacion_view(request):
 def generar_documento_view(request):
     u = request.user
 
-    # Bloqueo de permisos (similar a estado_reparacion)
-    if u.groups.filter(name='Operador Técnico').exists() and not (u.is_superuser or u.groups.filter(name='Administrador').exists()):
+    # Permisos: Administrador y Operador Técnico pueden generar documentos;
+    # Técnico de Taller no tiene acceso.
+    if not (u.is_superuser or u.groups.filter(name__in=['Administrador', 'Operador Técnico']).exists()):
         messages.error(request, "No tienes permisos para generar documentos.")
-        return redirect('main')
-
-    if not (u.is_superuser or u.groups.filter(name__in=['Administrador', 'Técnico de Taller']).exists()):
-        messages.error(request, "No tienes permisos suficientes para acceder aquí.")
         return redirect('main')
 
     # Filtros GET
@@ -321,6 +317,7 @@ def generar_documento_view(request):
         'estado_choices': Pedido.ESTADOS,
     }
     return render(request, 'base_datos/Generar_documento.html', context)
+
 
 
 import win32print
@@ -849,3 +846,330 @@ def pedido_actualizar_view(request, orden_id):
     return JsonResponse({'ok': True, 'message': f'Estado de orden {pedido.N_Orden} actualizado.'})
 
 
+from django.contrib.auth.models import User, Group
+from django.contrib.auth.decorators import login_required
+from django.contrib import messages
+from django.shortcuts import render, redirect, get_object_or_404
+
+@login_required
+def gestionar_cuentas_view(request):
+    # Solo Administrador o superuser puede acceder
+    if not (request.user.is_superuser or request.user.groups.filter(name='Administrador').exists()):
+        messages.error(request, "No tienes permisos para acceder a esta sección.")
+        return redirect('main')
+
+    usuarios = User.objects.all().order_by('username')
+
+    # Datos de sesión actual (igual que en main_view)
+    usuario_activo = request.user.get_full_name() or request.user.username
+    grupo_actual = (
+        "Administrador" if (request.user.is_superuser or request.user.groups.filter(name='Administrador').exists())
+        else (request.user.groups.first().name if request.user.groups.exists() else "Sin grupo")
+    )
+
+    context = {
+        'usuarios': usuarios,
+        'usuario_activo': usuario_activo,
+        'grupo_actual': grupo_actual,
+    }
+    return render(request, 'base_datos/gestionar_cuentas.html', context)
+
+
+import re
+from django.contrib.auth.decorators import login_required
+from django.contrib.auth.models import User
+from django.contrib.auth import update_session_auth_hash
+from django.contrib.auth.password_validation import validate_password
+from django.core.exceptions import ValidationError
+from django.shortcuts import get_object_or_404, render, redirect
+from django.contrib import messages
+
+@login_required
+def cambiar_contrasena_view(request, user_id):
+    # Permisos: solo superusuario o grupo Administrador
+    if not (request.user.is_superuser or request.user.groups.filter(name='Administrador').exists()):
+        messages.error(request, "No tienes permisos.")
+        return redirect('gestionar_cuentas')
+
+    usuario = get_object_or_404(User, pk=user_id)
+
+    if request.method == 'POST':
+        nueva1 = request.POST.get('nueva_contrasena', '').strip()
+        nueva2 = request.POST.get('confirmar_contrasena', '').strip()
+
+        if not nueva1 or not nueva2:
+            messages.error(request, "Debes completar ambos campos de contraseña.")
+        elif nueva1 != nueva2:
+            messages.error(request, "Las contraseñas no coinciden.")
+        else:
+            # Validación con los validadores de Django (si están configurados)
+            try:
+                validate_password(nueva1, user=usuario)
+            except ValidationError as e:
+                # Mostrar el primer mensaje de error o todos concatenados
+                messages.error(request, " ".join(e.messages))
+            else:
+                # Validación adicional opcional (reglas personalizadas)
+                if len(nueva1) < 8:
+                    messages.error(request, "La contraseña debe tener al menos 8 caracteres.")
+                elif not re.search(r'[A-Z]', nueva1):
+                    messages.error(request, "La contraseña debe contener al menos una letra mayúscula.")
+                elif not re.search(r'[a-z]', nueva1):
+                    messages.error(request, "La contraseña debe contener al menos una letra minúscula.")
+                elif not re.search(r'\d', nueva1):
+                    messages.error(request, "La contraseña debe contener al menos un número.")
+                elif not re.search(r'[^\w\s]', nueva1):
+                    messages.error(request, "La contraseña debe contener al menos un carácter especial (ej. !@#$%).")
+                else:
+                    usuario.set_password(nueva1)
+                    usuario.save()
+
+                    # Si el admin cambia su propia contraseña, mantener la sesión
+                    if usuario == request.user:
+                        update_session_auth_hash(request, usuario)
+
+                    messages.success(request, f"Contraseña de {usuario.username} actualizada correctamente.")
+                    return redirect('gestionar_cuentas')
+
+    # Contexto para la plantilla
+    usuario_activo = request.user.get_full_name() or request.user.username
+    grupo_actual = (
+        "Administrador" if (request.user.is_superuser or request.user.groups.filter(name='Administrador').exists())
+        else (request.user.groups.first().name if request.user.groups.exists() else "Sin grupo")
+    )
+
+    context = {
+        'usuario': usuario,
+        'usuario_activo': usuario_activo,
+        'grupo_actual': grupo_actual,
+    }
+    return render(request, 'base_datos/cambiar_contrasena.html', context)
+
+
+
+@login_required
+def activar_usuario_view(request, user_id):
+    if not (request.user.is_superuser or request.user.groups.filter(name='Administrador').exists()):
+        messages.error(request, "No tienes permisos.")
+        return redirect('gestionar_cuentas')
+
+    usuario = get_object_or_404(User, pk=user_id)
+    usuario.is_active = True
+    usuario.save()
+    messages.success(request, f"Usuario {usuario.username} activado.")
+    return redirect('gestionar_cuentas')
+
+
+@login_required
+def desactivar_usuario_view(request, user_id):
+    if not (request.user.is_superuser or request.user.groups.filter(name='Administrador').exists()):
+        messages.error(request, "No tienes permisos.")
+        return redirect('gestionar_cuentas')
+
+    usuario = get_object_or_404(User, pk=user_id)
+    usuario.is_active = False
+    usuario.save()
+    messages.success(request, f"Usuario {usuario.username} desactivado.")
+    return redirect('gestionar_cuentas')
+
+
+import re
+from django.contrib.auth.models import User, Group
+from django.contrib.auth.decorators import login_required
+from django.contrib import messages
+from django.shortcuts import render, redirect
+
+@login_required
+def crear_usuario_view(request):
+    # Permisos: solo superuser o grupo Administrador
+    if not (request.user.is_superuser or request.user.groups.filter(name='Administrador').exists()):
+        messages.error(request, "No tienes permisos.")
+        return redirect('gestionar_cuentas')
+
+    # Helpers de validación
+    def empieza_mayus_y_min3(valor: str) -> bool:
+        if not valor:
+            return False
+        return bool(re.match(r'^[A-ZÁÉÍÓÚÑ][A-Za-zÁÉÍÓÚáéíóúñÑ]{2,}$', valor.strip()))
+
+    def email_valido(valor: str) -> bool:
+        if not valor:
+            return True  # campo email es opcional en frontend; validar solo si viene
+        return bool(re.match(r'^[^\s@]+@[^\s@]+\.[^\s@]+$', valor.strip()))
+
+    def contrasena_segura(valor: str) -> bool:
+        if not valor:
+            return False
+        return (
+            len(valor) >= 8 and
+            re.search(r'[A-Z]', valor) and
+            re.search(r'[a-z]', valor) and
+            re.search(r'\d', valor) and
+            re.search(r'[^\w\s]', valor)
+        )
+
+    if request.method == 'POST':
+        username = request.POST.get('username', '').strip()
+        first_name = request.POST.get('first_name', '').strip()
+        last_name = request.POST.get('last_name', '').strip()
+        email = request.POST.get('email', '').strip()
+        password1 = request.POST.get('password1', '')
+        password2 = request.POST.get('password2', '')
+        group_id = request.POST.get('group_id', '')
+
+        # Validaciones básicas (coinciden con las reglas del frontend)
+        # Campos obligatorios: username, first_name, password1, group_id
+        if not username:
+            messages.error(request, "El nombre de usuario es obligatorio.")
+        elif not first_name:
+            messages.error(request, "El nombre es obligatorio.")
+        elif not password1:
+            messages.error(request, "La contraseña es obligatoria.")
+        elif not group_id:
+            messages.error(request, "Debes seleccionar un grupo.")
+        elif not empieza_mayus_y_min3(username):
+            messages.error(request, "El nombre de usuario debe comenzar con mayúscula y tener mínimo 3 caracteres.")
+        elif not empieza_mayus_y_min3(first_name):
+            messages.error(request, "El nombre debe comenzar con mayúscula y tener mínimo 3 caracteres.")
+        elif last_name and not empieza_mayus_y_min3(last_name):
+            messages.error(request, "El apellido, si se proporciona, debe comenzar con mayúscula y tener mínimo 3 caracteres.")
+        elif not email_valido(email):
+            messages.error(request, "Formato de correo electrónico inválido.")
+        elif password1 != password2:
+            messages.error(request, "Las contraseñas no coinciden.")
+        elif not contrasena_segura(password1):
+            messages.error(request, "La contraseña debe tener al menos 8 caracteres, incluir mayúscula, minúscula, número y un carácter especial.")
+        elif User.objects.filter(username=username).exists():
+            messages.error(request, "El usuario ya existe.")
+        else:
+            # Crear usuario
+            try:
+                nuevo = User.objects.create_user(
+                    username=username,
+                    password=password1,
+                    first_name=first_name,
+                    last_name=last_name,
+                    email=email,
+                    is_active=True
+                )
+                # Asignar grupo por id (si existe)
+                try:
+                    grupo_obj = Group.objects.get(pk=group_id)
+                    nuevo.groups.clear()
+                    nuevo.groups.add(grupo_obj)
+                except (Group.DoesNotExist, ValueError):
+                    # Si no existe el grupo por id, intentar por nombre (compatibilidad con versiones previas)
+                    grupo_obj = Group.objects.filter(name=group_id).first()
+                    if grupo_obj:
+                        nuevo.groups.clear()
+                        nuevo.groups.add(grupo_obj)
+                nuevo.save()
+                messages.success(request, f"Usuario {username} creado correctamente.")
+                return redirect('gestionar_cuentas')
+            except Exception as e:
+                messages.error(request, f"Ocurrió un error al crear el usuario: {str(e)}")
+
+    # Contexto para la plantilla (incluye grupos y datos de sesión)
+    grupos = Group.objects.all()
+    usuario_activo = request.user.get_full_name() or request.user.username
+    grupo_actual = (
+        "Administrador" if (request.user.is_superuser or request.user.groups.filter(name='Administrador').exists())
+        else (request.user.groups.first().name if request.user.groups.exists() else "Sin grupo")
+    )
+
+    context = {
+        'grupos': grupos,
+        'usuario_activo': usuario_activo,
+        'grupo_actual': grupo_actual,
+    }
+    return render(request, 'base_datos/crear_usuario.html', context)
+
+from django.contrib.auth.decorators import login_required
+from django.contrib.auth.models import User, Group
+from django.shortcuts import get_object_or_404, render, redirect
+from django.contrib import messages
+
+from django.contrib.auth.decorators import login_required
+from django.contrib.auth.models import User, Group
+from django.shortcuts import get_object_or_404, render, redirect
+from django.contrib import messages
+
+@login_required
+def cambiar_grupo_view(request, user_id):
+    # Permisos
+    if not (request.user.is_superuser or request.user.groups.filter(name='Administrador').exists()):
+        messages.error(request, "No tienes permisos para cambiar grupos.")
+        return redirect('gestionar_cuentas')
+
+    usuario = get_object_or_404(User, pk=user_id)
+    grupos = Group.objects.all()
+
+    # Preparar lista de grupos con flag 'selected' para evitar comparaciones en template
+    grupo_actual_id = usuario.groups.first().id if usuario.groups.exists() else None
+    grupos_con_flag = []
+    for g in grupos:
+        grupos_con_flag.append({
+            'obj': g,
+            'selected': (g.id == grupo_actual_id)
+        })
+
+    if request.method == 'POST':
+        group_id = request.POST.get('group_id')
+        if not group_id:
+            messages.error(request, "Debes seleccionar un grupo.")
+        else:
+            try:
+                nuevo_grupo = Group.objects.get(pk=group_id)
+                usuario.groups.clear()
+                usuario.groups.add(nuevo_grupo)
+                usuario.save()
+                messages.success(request, f"Grupo de {usuario.username} cambiado a {nuevo_grupo.name}.")
+                return redirect('gestionar_cuentas')
+            except Group.DoesNotExist:
+                messages.error(request, "El grupo seleccionado no existe.")
+
+    usuario_activo = request.user.get_full_name() or request.user.username
+    grupo_actual = (
+        "Administrador" if (request.user.is_superuser or request.user.groups.filter(name='Administrador').exists())
+        else (request.user.groups.first().name if request.user.groups.exists() else "Sin grupo")
+    )
+
+    context = {
+        'usuario': usuario,
+        'grupos_con_flag': grupos_con_flag,
+        'usuario_activo': usuario_activo,
+        'grupo_actual': grupo_actual,
+    }
+    return render(request, 'base_datos/cambiar_grupo.html', context)
+
+
+from django.contrib.auth.decorators import login_required
+from django.contrib.auth.models import User
+from django.shortcuts import get_object_or_404, redirect
+from django.contrib import messages
+from django.views.decorators.http import require_POST
+
+@login_required
+@require_POST
+def toggle_usuario_view(request, user_id):
+    # Solo superusuarios o administradores pueden cambiar estado
+    if not (request.user.is_superuser or request.user.groups.filter(name='Administrador').exists()):
+        messages.error(request, "No tienes permisos para cambiar el estado de usuarios.")
+        return redirect('gestionar_cuentas')
+
+    usuario = get_object_or_404(User, pk=user_id)
+
+    # Evitar que un admin se suspenda a sí mismo (opcional)
+    if usuario == request.user:
+        messages.error(request, "No puedes cambiar el estado de tu propia cuenta.")
+        return redirect('gestionar_cuentas')
+
+    usuario.is_active = not usuario.is_active
+    usuario.save()
+
+    if usuario.is_active:
+        messages.success(request, f"La cuenta de {usuario.username} ha sido activada.")
+    else:
+        messages.success(request, f"La cuenta de {usuario.username} ha sido suspendida.")
+
+    return redirect('gestionar_cuentas')

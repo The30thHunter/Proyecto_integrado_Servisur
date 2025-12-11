@@ -1,0 +1,104 @@
+{% extends "base_datos/base.html" %}
+{% load static %}
+{% block content %}
+
+<head>
+    <meta charset="UTF-8">
+    <title>Gestión de Cuentas</title>
+    <link rel="stylesheet" href="{% static 'css/gestionar_cuentas.css' %}">
+    <!-- Bootstrap -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+</head>
+
+<div class="container mt-4">
+
+    <!-- Sesión actual -->
+    <div class="session-box text-end mb-3">
+        <small class="text-muted d-block">Sesión actual</small>
+        <strong class="fs-6">{{ grupo_actual }}</strong>
+        <small class="text-muted d-block">{{ usuario_activo }}</small>
+    </div>
+
+    <!-- Encabezado -->
+    <h2 class="mb-2">Gestión de Cuentas</h2>
+    <p class="text-muted mb-4">
+        En esta sección puedes administrar las cuentas de usuario del sistema.
+        Aquí podrás crear nuevas cuentas, cambiar contraseñas, modificar grupos de pertenencia
+        y activar o desactivar usuarios según sea necesario.
+        La tabla a continuación muestra un resumen de todos los usuarios registrados.
+    </p>
+
+    <div class="d-flex justify-content-between align-items-center mb-2">
+        <div class="text-left">
+            <a href="{% url 'crear_usuario' %}" class="btn btn-success">
+                + Crear nueva cuenta
+            </a>
+        </div>
+    </div>
+
+    <br>
+
+    <!-- Tabla de usuarios -->
+    <div class="card shadow-sm">
+        <div class="card-body">
+            <div class="table-responsive">
+                <table class="table table-hover align-middle mb-0">
+                    <thead class="table-primary">
+                        <tr>
+                            <th scope="col">Usuario</th>
+                            <th scope="col">Nombre completo</th>
+                            <th scope="col">Grupo</th>
+                            <th scope="col">Estado</th>
+                            <th scope="col" class="text-center">Acciones</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for u in usuarios %}
+                        <tr>
+                            <td><strong>{{ u.username }}</strong></td>
+                            <td>{{ u.get_full_name }}</td>
+                            <td>
+                                {% if u.groups.all %}
+                                <span class="badge bg-info text-dark">{{ u.groups.first.name }}</span>
+                                {% else %}
+                                <span class="badge bg-secondary">Sin grupo</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                {% if u.is_active %}
+                                <span class="badge bg-success">Activo</span>
+                                {% else %}
+                                <span class="badge bg-danger">Inactivo</span>
+                                {% endif %}
+                            </td>
+
+                            <!-- Acciones: contraseña, grupo y activar/desactivar (POST) -->
+                            <td class="text-center">
+                                <a href="{% url 'cambiar_contrasena' u.id %}" class="btn btn-sm btn-password">Contraseña</a>
+                                <a href="{% url 'cambiar_grupo' u.id %}" class="btn btn-sm btn-group-action">Grupo</a>
+                            
+                                <form action="{% url 'toggle_usuario' u.id %}" method="post" class="d-inline">
+                                    {% csrf_token %}
+                                    {% if u.is_active %}
+                                    <button type="submit" class="btn btn-sm btn-deactivate">Suspender</button>
+                                    {% else %}
+                                    <button type="submit" class="btn btn-sm btn-activate">Activar</button>
+                                    {% endif %}
+                                </form>
+                            </td>
+
+
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <footer class="mt-auto text-center small text-muted">
+        <p class="mb-1">Sistema Servisur &copy; {{ now|date:"Y" }}</p>
+        <p class="mb-0">Desarrollado por el equipo técnico</p>
+    </footer>
+
+</div>
+{% endblock %}

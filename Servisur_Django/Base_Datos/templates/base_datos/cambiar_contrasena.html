@@ -1,0 +1,96 @@
+{% extends "base_datos/base.html" %}
+{% load static %}
+{% block content %}
+
+<head>
+    <meta charset="UTF-8">
+    <title>Cambiar contraseña</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="{% static 'css/gestionar_cuentas.css' %}">
+</head>
+
+<div class="container mt-4">
+    <div class="d-flex justify-content-between align-items-center mb-3">
+        <h2 class="mb-0">Cambiar contraseña</h2>
+    </div>
+
+    <div>
+        <a href="{% url 'gestionar_cuentas' %}" class="btn btn-secondary">Volver</a>
+    </div>
+
+    <br>
+
+    <div class="card shadow-sm">
+        <div class="card-body">
+            <!-- action apunta a la URL nombrada cambiar_contrasena -->
+            <form method="post" action="{% url 'cambiar_contrasena' usuario.id %}" class="p-3" novalidate>
+                {% csrf_token %}
+
+                <div class="mb-3">
+                    <label for="nueva_contrasena" class="form-label">Nueva contraseña</label>
+                    <div class="input-group">
+                        <input type="password" id="nueva_contrasena" name="nueva_contrasena" class="form-control"
+                            placeholder="Introduce la nueva contraseña" required>
+                        <button type="button" class="btn btn-outline-secondary btn-sm toggle-pwd"
+                            data-target="#nueva_contrasena" aria-label="Mostrar contraseña">
+                            <img src="{% static 'img/icono_ojo.png' %}" alt="Mostrar" style="width:18px;height:18px;">
+                        </button>
+                    </div>
+                </div>
+
+                <div class="mb-3">
+                    <label for="confirmar_contrasena" class="form-label">Confirmar contraseña</label>
+                    <div class="input-group">
+                        <input type="password" id="confirmar_contrasena" name="confirmar_contrasena"
+                            class="form-control" placeholder="Repite la nueva contraseña" required>
+                        <button type="button" class="btn btn-outline-secondary btn-sm toggle-pwd"
+                            data-target="#confirmar_contrasena" aria-label="Mostrar confirmar contraseña">
+                            <img src="{% static 'img/icono_ojo.png' %}" alt="Mostrar" style="width:18px;height:18px;">
+                        </button>
+                    </div>
+                </div>
+
+                <div class="mb-3 form-help">
+                    <strong>Reglas de contraseña segura</strong>
+                    <ul style="margin:6px 0 0 1rem;">
+                        <li>Al menos 8 caracteres</li>
+                        <li>Una letra mayúscula</li>
+                        <li>Una letra minúscula</li>
+                        <li>Un número</li>
+                        <li>Un carácter especial (ej. ! @ # $ %)</li>
+                    </ul>
+                </div>
+
+                <div class="d-flex gap-2">
+                    <button type="submit" class="btn btn-success">Actualizar</button>
+                    <a href="{% url 'gestionar_cuentas' %}" class="btn btn-secondary">Cancelar</a>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<br>    
+<footer class="mt-auto text-center small text-muted">
+    <p class="mb-1">Sistema Servisur &copy; {{ now|date:"Y" }}</p>
+    <p class="mb-0">Desarrollado por el equipo técnico</p>
+</footer>
+
+<!-- Pequeño script para alternar visibilidad de contraseñas -->
+<script>
+    document.addEventListener('click', function (e) {
+        const btn = e.target.closest('.toggle-pwd');
+        if (!btn) return;
+        const target = document.querySelector(btn.getAttribute('data-target'));
+        if (!target) return;
+        if (target.type === 'password') {
+            target.type = 'text';
+            btn.classList.add('active');
+        } else {
+            target.type = 'password';
+            btn.classList.remove('active');
+        }
+    });
+</script>
+
+{% endblock %}
