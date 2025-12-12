@@ -15,6 +15,20 @@ import pandas as pd
 from datetime import datetime
 import re
 
+from io import BytesIO
+from django.http import FileResponse, Http404
+from django.shortcuts import get_object_or_404
+from django.contrib.staticfiles import finders
+from django.contrib.auth.decorators import login_required
+from reportlab.lib.pagesizes import A4
+from reportlab.pdfgen import canvas
+from reportlab.lib.utils import ImageReader
+from reportlab.lib import colors
+
+from .models import Pedido
+
+
+
 from .decoradores import solo_administrador, solo_operador, solo_reparador
 from .models import (
     Cliente, Pedido, Marca, Modelo, Dispositivo, Tipo_Falla
@@ -1173,3 +1187,108 @@ def toggle_usuario_view(request, user_id):
         messages.success(request, f"La cuenta de {usuario.username} ha sido suspendida.")
 
     return redirect('gestionar_cuentas')
+
+#----------------------------------------------------------------------------------------------------------------------
+
+
+
+
+@login_required
+def generar_boleta_pdf(request, pk):
+    pedido = get_object_or_404(Pedido, pk=pk)
+
+    buffer = BytesIO()
+    c = canvas.Canvas(buffer, pagesize=A4)
+    width, height = A4
+
+    # --- Header: logo + nombre empresa ---
+    # Intentamos localizar el logo en static
+    logo_path = finders.find('img/logo_servisur1.png')  # ajusta la ruta si tu logo está en otra carpeta
+    if logo_path:
+        try:
+            img = ImageReader(logo_path)
+            # dibuja logo en la esquina superior izquierda
+            logo_w = 120
+            logo_h = 40
+            c.drawImage(img, 40, height - 60, width=logo_w, height=logo_h, preserveAspectRatio=True, mask='auto')
+        except Exception:
+            pass
+
+    # Nombre de la empresa en el header (centrado a la derecha del logo)
+    c.setFont("Helvetica-Bold", 16)
+    c.setFillColor(colors.HexColor("#2c3e50"))
+    c.drawString(180, height - 40, "SERVISUR")
+
+    # Línea separadora
+    c.setStrokeColor(colors.grey)
+    c.setLineWidth(0.5)
+    c.line(40, height - 70, width - 40, height - 70)
+
+    # --- Cuerpo con datos del pedido ---
+    c.setFont("Helvetica", 11)
+    y = height - 100
+    gap = 18
+
+    def draw_label_value(label, value):
+        nonlocal y
+        c.setFont("Helvetica-Bold", 10)
+        c.drawString(40, y, f"{label}:")
+        c.setFont("Helvetica", 10)
+        c.drawString(140, y, str(value))
+        y -= gap
+
+    # Datos básicos
+    draw_label_value("Nro Orden", pedido.N_Orden)
+    draw_label_value("Fecha", pedido.Fecha.strftime("%d/%m/%Y") if getattr(pedido, 'Fecha', None) else "-")
+
+    # Documento y nombre del cliente (si existen)
+    doc = "-"
+    nombre = "-"
+    if getattr(pedido, 'Dispositivo', None) and getattr(pedido.Dispositivo, 'rut', None):
+        rut_obj = pedido.Dispositivo.rut
+        doc = rut_obj.Rut or rut_obj.DocumentoExtranjero or "-"
+        nombre = f"{rut_obj.Nombre or ''} {rut_obj.Apellido or ''}".strip() or "-"
+
+    draw_label_value("Nro documento", doc)
+    draw_label_value("Nombre", nombre)
+
+    # Modelo y trabajo
+    modelo = "-"
+    if getattr(pedido, 'Dispositivo', None) and getattr(pedido.Dispositivo, 'modelo', None):
+        modelo = f"{pedido.Dispositivo.modelo.Marca.Marca} {pedido.Dispositivo.modelo.Modelo}"
+    draw_label_value("Modelo", modelo)
+    draw_label_value("Trabajo a realizar", getattr(pedido, 'Tipo_de_falla', '-') or "-")
+
+    # Observaciones
+    observ = getattr(pedido, 'Observaciones', '-') or "-"
+    # Si la observación es larga, escribir en párrafo
+    c.setFont("Helvetica-Bold", 10)
+    c.drawString(40, y, "Observaciones:")
+    y -= gap
+    c.setFont("Helvetica", 10)
+    text_obj = c.beginText(40, y)
+    text_obj.setLeading(14)
+    max_width = width - 80
+    # dividir texto en líneas simples
+    for line in str(observ).splitlines():
+        # simple wrap
+        while line:
+            # medir cuántos caracteres caben (estimación)
+            # ReportLab no tiene medida de texto simple aquí; usamos slicing aproximado
+            slice_len = 90
+            part = line[:slice_len]
+            text_obj.textLine(part)
+            line = line[slice_len:]
+    c.drawText(text_obj)
+
+    # --- Footer: firma o nota ---
+    c.setFont("Helvetica-Oblique", 9)
+    c.setFillColor(colors.grey)
+    c.drawString(40, 40, "Boleta generada por Servisur - Documento informativo.")
+
+    c.showPage()
+    c.save()
+
+    buffer.seek(0)
+    filename = f"boleta_{pedido.N_Orden}.pdf"
+    return FileResponse(buffer, as_attachment=True, filename=filename)

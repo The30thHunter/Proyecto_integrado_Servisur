@@ -44,5 +44,5 @@ urlpatterns = [
     path('usuarios/<int:user_id>/toggle/', toggle_usuario_view, name='toggle_usuario'),
     path('cambiar_contrasena/<int:user_id>/', views.cambiar_contrasena_view, name='cambiar_contrasena'),
 
-
+    path('boleta/pdf/<int:pk>/', views.generar_boleta_pdf, name='boleta_pdf'),
 ]
