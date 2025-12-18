@@ -412,7 +412,7 @@ def imprimir_ticket_view(request):
 
     return HttpResponse("Método no permitido", status=405)
 
-
+from django.core.mail import EmailMessage
 # 📊 Generar Excel (solo Administrador)
 @solo_administrador
 def generar_excel_view(request):
@@ -480,6 +480,17 @@ def generar_excel_view(request):
 
     buffer.seek(0)
     filename = f"servisur_pedidos_{ini.strftime('%Y%m%d')}_{fin.strftime('%Y%m%d')}{('_'+estado if estado else '')}.xlsx"
+
+    
+
+    email = EmailMessage(
+        subject='Respaldo de pedidos',
+        body=f'Se adjunta el respaldo de pedidos desde {fecha_inicio} hasta {fecha_fin}.',
+        from_email=settings.EMAIL_HOST_USER,
+        to=[settings.EMAIL_HOST_USER]  # Se envía a la misma cuenta
+    )
+    email.attach(filename, buffer.getvalue(), 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
+    email.send(fail_silently=False)
 
     response = HttpResponse(
         buffer.getvalue(),
