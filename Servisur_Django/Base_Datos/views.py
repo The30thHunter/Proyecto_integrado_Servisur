@@ -412,7 +412,15 @@ def imprimir_ticket_view(request):
 
     return HttpResponse("Método no permitido", status=405)
 
+
+import ssl
+import certifi
+from django.core.mail.backends.smtp import EmailBackend
 from django.core.mail import EmailMessage
+
+class SSLFixedEmailBackend(EmailBackend):
+    def open(self):
+        self.ssl_context = ssl.create_default_context(cafile=certifi.where())
 # 📊 Generar Excel (solo Administrador)
 @solo_administrador
 def generar_excel_view(request):
@@ -483,11 +491,13 @@ def generar_excel_view(request):
 
     
 
+    
     email = EmailMessage(
         subject='Respaldo de pedidos',
         body=f'Se adjunta el respaldo de pedidos desde {fecha_inicio} hasta {fecha_fin}.',
         from_email=settings.EMAIL_HOST_USER,
-        to=[settings.EMAIL_HOST_USER]  # Se envía a la misma cuenta
+        to=[settings.EMAIL_HOST_USER],  # Se envía a la misma cuenta
+        connection=SSLFixedEmailBackend()  # Usa el backend con contexto SSL seguro
     )
     email.attach(filename, buffer.getvalue(), 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
     email.send(fail_silently=False)
